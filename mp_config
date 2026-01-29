@@ -1,0 +1,5 @@
+# MP Configuration File
+MP_ID="template"
+# Docker Image to use (Override this for specific MPs)
+DOCKER_IMAGE="ntuos/mp2"
+
