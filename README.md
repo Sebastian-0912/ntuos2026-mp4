@@ -33,6 +33,8 @@ Execute the automated tests for the current assignment:
 
 ```bash
 ./mp.sh test
+# Or specifically for grading:
+./mp.sh grade
 ```
 
 ### 4. Clean
