@@ -19,11 +19,11 @@ Virtualization provides an abstracted layer from the actual hardware. Here is a 
 
 ### Supported Platforms
 
-| Platform    | Recommendation           | Note                                                                   |
-| :---------- | :----------------------- | :--------------------------------------------------------------------- |
-| **Linux**   | ⭐ **Highly Recommended** | Native performance.                                                    |
-| **Windows** | ⭐ **Recommended**        | Use with [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install). |
-| **macOS**   | Supported                | Docker Desktop (Apple Silicon supported).                              |
+| Platform    | Setup Requirements                                                             |
+| :---------- | :----------------------------------------------------------------------------- |
+| **Linux**   | Native performance. Best experience.                                           |
+| **Windows** | Requires [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install) backend. |
+| **macOS**   | Requires Docker Desktop. Apple Silicon is fully supported.                     |
 
 ---
 
