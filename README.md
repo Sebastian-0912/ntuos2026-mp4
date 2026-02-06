@@ -1,74 +1,35 @@
-# xv6-ntu-template
+# Machine Problem Assignment
 
-This repository serves as the template for the Operating Systems course assignments (MP0-MP4) at National Taiwan University. It extends the vanilla [xv6-riscv](https://github.com/mit-pdos/xv6-riscv) with a modular infrastructure for assignment management, testing, and grading.
+## Goal
+Complete the operating system assignment as specified in the documentation.
 
-## Features
+## Resources
+*   **Specification:** Please refer to the `doc/` directory or the course website.
+*   **Environment & Architecture:** [doc/environment.md](doc/environment.md)
+*   **Original xv6 README:** [README](https://github.com/mit-pdos/xv6-riscv/blob/riscv/README)
 
--   **Unified Management**: A single script `mp.sh` handles environment setup, building, running, and testing.
--   **Modular Configuration**: Assignment-specific settings are isolated in `mp.conf` and `conf/mp.mk`, keeping the core kernel code clean.
--   **Automated Grading**: Integrated Python-based grading system (`grade/`) with support for both shell-script tests and complex Python logic.
--   **Docker Support**: Consistent development environment via Docker.
+## Quick Start
+We provide a script `mp.sh` to help you build and run xv6 using Docker.
 
-## Usage
-
-### 1. Setup
-
-Initialize the environment (e.g., setting up git hooks):
-
-```bash
-./mp.sh setup
-```
-
-### 2. Run QEMU
-
-Build and run xv6 in QEMU:
-
+### 1. Build and Run xv6 (QEMU)
 ```bash
 ./mp.sh qemu
 ```
 
-### 3. Run Tests
-
-Execute the automated tests for the current assignment:
-
+### 2. Run Tests
 ```bash
-./mp.sh test
-# Or specifically for grading:
 ./mp.sh grade
 ```
 
-### 4. Clean
-
-Clean build artifacts:
-
+### 3. Clean Build Artifacts
 ```bash
 ./mp.sh clean
 ```
 
-## Configuration
+---
 
-### `mp.conf`
+## Original xv6-riscv Introduction
+xv6 is a re-implementation of Dennis Ritchie's and Ken Thompson's Unix Version 6 (v6). xv6 loosely follows the structure and style of v6, but is implemented for a modern RISC-V multiprocessor using ANSI C.
 
-This file defines the current assignment ID and environment settings.
-
-```bash
-MP_ID="mp2"
-DOCKER_IMAGE="ntuos/mp2"
-```
-
-### `conf/mp.mk`
-
-This Makefile snippet allows you to inject assignment-specific build rules.
-
-```makefile
-# Example: Add a user program _myprog
-UPROGS += $U/_myprog
-```
-
-## Directory Structure
-
--   `conf/`: Configuration files (e.g., `mp.mk`).
--   `grade/`: Grading system core (`run.py`, `gradelib.py`).
--   `tests/`: Assignment-specific test scripts and data.
--   `mp.sh`: Main management script.
--   `mp.conf`: Main configuration file.
+ACKNOWLEDGMENTS
+xv6 is inspired by John Lions's Commentary on UNIX 6th Edition. See also https://pdos.csail.mit.edu/6.828/.
