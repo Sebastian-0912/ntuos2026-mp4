@@ -109,8 +109,8 @@ _%: %.o $(ULIB) $U/user.ld
 
 $U/_%: $U/%.o $(ULIB) $U/user.ld
 	$(LD) $(LDFLAGS) -T $U/user.ld -o $@ $< $(ULIB)
-	$(OBJDUMP) -S $@ > $*.asm
-	$(OBJDUMP) -t $@ | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $*.sym
+	$(OBJDUMP) -S $@ > $U/$*.asm
+	$(OBJDUMP) -t $@ | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $U/$*.sym
 
 $U/usys.S : $U/usys.pl
 	perl $U/usys.pl > $U/usys.S
