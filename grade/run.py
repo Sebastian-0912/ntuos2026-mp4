@@ -27,7 +27,8 @@ def load_python_tests(test_dir):
     # Add test_dir to sys.path so imports work if needed
     sys.path.append(os.path.abspath(test_dir))
     
-    for py_file in glob.glob(os.path.join(test_dir, "*.py")):
+    test_files = glob.glob(os.path.join(test_dir, "*.py")) + glob.glob(os.path.join(test_dir, "*.so"))
+    for py_file in test_files:
         if os.path.basename(py_file) == "setup.py":
             continue
         module_name = os.path.basename(py_file)[:-3]
