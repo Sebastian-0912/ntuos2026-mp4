@@ -11,14 +11,29 @@ fi
 
 # Constants
 SCRIPT_DIR=$(realpath "$(dirname "$0")")
-CONTAINER_NAME="${MP_ID:-mp_container}"
 IMAGE_NAME="${DOCKER_IMAGE:-ntuos/mp2}" # Default fallback
-TEST_DIR_PATH="${TEST_DIR:-tests}"
 
-# Docker command wrapper
-DOCKER_CMD="docker"
-if ! docker ps >/dev/null 2>&1; then
-    DOCKER_CMD="sudo docker"
+# Docker command wrapper, fallback on podman
+if command -v docker > /dev/null 2>&1; then
+    DOCKER_CMD="docker"
+elif command -v podman > /dev/null 2>&1; then
+    DOCKER_CMD="podman"
+else
+    echo "Error: docker not found."
+    exit 1
+fi
+PODMAN_FLAGS=""
+if $DOCKER_CMD ps >/dev/null 2>&1; then
+    # Running without sudo
+    if [[ "$DOCKER_CMD" == "podman" ]]; then
+        PODMAN_FLAGS="--userns=keep-id --security-opt label=disable"
+    fi
+else
+    echo "Info: running container with sudo"
+    if [[ "$DOCKER_CMD" == "podman" ]]; then
+        PODMAN_FLAGS="--security-opt label=disable"
+    fi
+    DOCKER_CMD="sudo $DOCKER_CMD"
 fi
 
 DOCKER_IT_FLAG="-it"
@@ -42,13 +57,14 @@ chown_if_need() {
     else
         current_user_group=$(stat -c "%u:%g" "$target" 2>/dev/null)
     fi
-    local desired_user_group="$(id -u):$(id -g)"
+    local desired_user_group
+    desired_user_group="$(id -u):$(id -g)"
     if [ "$current_user_group" != "$desired_user_group" ]; then
         maysudo chown -R "$desired_user_group" "$target" >/dev/null 2>&1
     fi
 }
 
-START_IMAGE="$DOCKER_CMD run $DOCKER_IT_FLAG -v $(realpath $SCRIPT_DIR):/home/student/xv6 -w /home/student/xv6 -u 1000:1000 --rm $IMAGE_NAME"
+START_IMAGE="$DOCKER_CMD run $PODMAN_FLAGS $DOCKER_IT_FLAG -v $(realpath "$SCRIPT_DIR"):/home/student/xv6 -w /home/student/xv6 -u 1000:1000 --rm $IMAGE_NAME"
 
 # Main logic
 case "$1" in
