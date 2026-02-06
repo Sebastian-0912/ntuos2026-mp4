@@ -2,10 +2,10 @@
 # mp.sh - Unified management script for xv6-ntu-template
 
 # Load configuration
-if [ -f "mp_config" ]; then
-    source mp_config
+if [ -f "mp.conf" ]; then
+    source mp.conf
 else
-    echo "Error: mp_config not found."
+    echo "Error: mp.conf not found."
     exit 1
 fi
 

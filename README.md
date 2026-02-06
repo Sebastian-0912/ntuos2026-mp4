@@ -5,7 +5,7 @@ This repository serves as the template for the Operating Systems course assignme
 ## Features
 
 -   **Unified Management**: A single script `mp.sh` handles environment setup, building, running, and testing.
--   **Modular Configuration**: Assignment-specific settings are isolated in `mp_config` and `conf/mp.mk`, keeping the core kernel code clean.
+-   **Modular Configuration**: Assignment-specific settings are isolated in `mp.conf` and `conf/mp.mk`, keeping the core kernel code clean.
 -   **Automated Grading**: Integrated Python-based grading system (`grade/`) with support for both shell-script tests and complex Python logic.
 -   **Docker Support**: Consistent development environment via Docker.
 
@@ -45,7 +45,7 @@ Clean build artifacts:
 
 ## Configuration
 
-### `mp_config`
+### `mp.conf`
 
 This file defines the current assignment ID and environment settings.
 
@@ -69,4 +69,4 @@ UPROGS += $U/_myprog
 -   `grade/`: Grading system core (`run.py`, `gradelib.py`).
 -   `tests/`: Assignment-specific test scripts and data.
 -   `mp.sh`: Main management script.
--   `mp_config`: Main configuration file.
+-   `mp.conf`: Main configuration file.
