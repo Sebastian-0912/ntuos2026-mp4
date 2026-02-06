@@ -11,9 +11,7 @@ fi
 
 # Constants
 SCRIPT_DIR=$(realpath "$(dirname "$0")")
-CONTAINER_NAME="${MP_ID:-mp_container}"
 IMAGE_NAME="${DOCKER_IMAGE:-ntuos/mp2}" # Default fallback
-TEST_DIR_PATH="${TEST_DIR:-tests}"
 
 # Docker command wrapper
 DOCKER_CMD="docker"
