@@ -56,7 +56,7 @@ chown_if_need() {
     else
         current_user_group=$(stat -c "%u:%g" "$target" 2>/dev/null)
     fi
-    local
+    local desired_user_group
     desired_user_group="$(id -u):$(id -g)"
     if [ "$current_user_group" != "$desired_user_group" ]; then
         maysudo chown -R "$desired_user_group" "$target" >/dev/null 2>&1
