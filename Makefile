@@ -193,9 +193,9 @@ qemu-gdb: $K/kernel .gdbinit fs.img
 print-gdbport:
 	@echo $(GDBPORT)
 
-QEMU_VERSION := $(shell $(QEMU) --version | head -n 1 | sed -E 's/^QEMU emulator version ([0-9]+\.[0-9]+)\..*/\1/')
+QEMU_VERSION := $(shell $(QEMU) --version | head -n 1 | sed -E 's/^QEMU emulator version ([0-9]+(\.[0-9]+)?).*/\1/')
 check-qemu-version:
-	@if [ "$(shell echo "$(QEMU_VERSION) >= $(MIN_QEMU_VERSION)" | bc)" -eq 0 ]; then \
+	@if [ "$(shell awk -v v1="$(QEMU_VERSION)" -v v2="$(MIN_QEMU_VERSION)" 'BEGIN {print (v1 >= v2 ? 1 : 0)}')" -eq 0 ]; then \
 		echo "ERROR: Need qemu version >= $(MIN_QEMU_VERSION)"; \
 		exit 1; \
 	fi
