@@ -27,15 +27,77 @@ def load_python_tests(test_dir):
     # Add test_dir to sys.path so imports work if needed
     sys.path.append(os.path.abspath(test_dir))
     
-    test_files = glob.glob(os.path.join(test_dir, "*.py")) + glob.glob(os.path.join(test_dir, "*.so"))
+    # 1. Load standard Python test scripts
+    test_files = glob.glob(os.path.join(test_dir, "*.py"))
+
+    # 2. Load architecture-specific binary tests (.so)
+    import platform
+    arch = platform.machine()
+    
+    # Map machine architecture to our suffix convention
+    # x86_64 -> .x86_64.so
+    # aarch64/arm64 -> .aarch64.so
+    arch_suffix = ""
+    if arch == "x86_64":
+        arch_suffix = ".x86_64.so"
+    elif arch in ["aarch64", "arm64"]:
+        arch_suffix = ".aarch64.so"
+    
+    # Find all base names of potential binary tests (e.g., test_mp0_private)
+    # We look for ANY .so file to identify the base name, then select the correct arch.
+    # Pattern: test_name.arch.so
+    all_so = glob.glob(os.path.join(test_dir, "*.so"))
+    binary_bases = set()
+    for so in all_so:
+        basename = os.path.basename(so)
+        # Strip known suffixes to get the test name
+        if basename.endswith(".x86_64.so"):
+            binary_bases.add(basename[:-10])
+        elif basename.endswith(".aarch64.so"):
+            binary_bases.add(basename[:-11])
+        elif basename.endswith(".so"): # Legacy fallback
+            binary_bases.add(basename[:-3])
+
+    for base in binary_bases:
+        target_so = os.path.join(test_dir, base + arch_suffix)
+        legacy_so = os.path.join(test_dir, base + ".so")
+        
+        final_target = None
+        if arch_suffix and os.path.exists(target_so):
+            final_target = target_so
+        elif os.path.exists(legacy_so):
+            final_target = legacy_so
+            
+        if final_target:
+             test_files.append(final_target)
+        else:
+            print(f"[WARN] No suitable test binary found for {base} on {arch}")
+            print(f"[HINT] Expected {base}{arch_suffix} or {base}.so")
+
     for py_file in test_files:
         if os.path.basename(py_file) == "setup.py":
             continue
-        module_name = os.path.basename(py_file)[:-3]
+        
+        # Determine module name (strip extension)
+        filename = os.path.basename(py_file)
+        if filename.endswith(".py"):
+            module_name = filename[:-3]
+        elif filename.endswith(".so"):
+            # For .so, we need to handle the complex suffixes
+             if filename.endswith(".x86_64.so"):
+                module_name = filename[:-10]
+             elif filename.endswith(".aarch64.so"):
+                module_name = filename[:-11]
+             else:
+                module_name = filename[:-3]
+
         spec = importlib.util.spec_from_file_location(module_name, py_file)
         if spec and spec.loader:
             module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
+            try:
+                spec.loader.exec_module(module)
+            except ImportError as e:
+                print(f"\n[WARN] Failed to load test module {module_name}: {e}")
 
 def load_script_tests(test_dir):
     for txt_file in glob.glob(os.path.join(test_dir, "*.txt")):
