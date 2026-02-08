@@ -27,10 +27,10 @@ def load_python_tests(test_dir):
     # Add test_dir to sys.path so imports work if needed
     sys.path.append(os.path.abspath(test_dir))
     
-    # 1. Load standard Python test scripts
-    test_files = glob.glob(os.path.join(test_dir, "*.py"))
-
-    # 2. Load architecture-specific binary tests (.so)
+    # 1. Gather all potential test files
+    py_files = set(glob.glob(os.path.join(test_dir, "*.py")))
+    
+    # 2. Logic to load architecture-specific binary tests (.so)
     import platform
     arch = platform.machine()
     
@@ -58,6 +58,9 @@ def load_python_tests(test_dir):
         elif basename.endswith(".so"): # Legacy fallback
             binary_bases.add(basename[:-3])
 
+    final_test_files = []
+    
+    # Process binaries first
     for base in binary_bases:
         target_so = os.path.join(test_dir, base + arch_suffix)
         legacy_so = os.path.join(test_dir, base + ".so")
@@ -69,10 +72,20 @@ def load_python_tests(test_dir):
             final_target = legacy_so
             
         if final_target:
-             test_files.append(final_target)
+             final_test_files.append(final_target)
+             # If we loaded a binary, DO NOT load the corresponding source .py
+             py_source = os.path.join(test_dir, base + ".py")
+             if py_source in py_files:
+                 py_files.remove(py_source)
         else:
             print(f"[WARN] No suitable test binary found for {base} on {arch}")
             print(f"[HINT] Expected {base}{arch_suffix} or {base}.so")
+
+    # Add remaining python files
+    final_test_files.extend(list(py_files))
+    
+    # Sort for deterministic order
+    test_files = sorted(final_test_files)
 
     for py_file in test_files:
         if os.path.basename(py_file) == "setup.py":
