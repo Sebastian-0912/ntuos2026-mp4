@@ -85,7 +85,16 @@ def load_python_tests(test_dir):
     final_test_files.extend(list(py_files))
     
     # Sort for deterministic order
-    test_files = sorted(final_test_files)
+    # Sort with priority: Public > Private > Others check
+    def test_priority(filename):
+        base = os.path.basename(filename)
+        if "public" in base:
+            return (0, base)
+        elif "private" in base:
+            return (1, base)
+        return (2, base)
+        
+    test_files = sorted(final_test_files, key=test_priority)
 
     for py_file in test_files:
         if os.path.basename(py_file) == "setup.py":
