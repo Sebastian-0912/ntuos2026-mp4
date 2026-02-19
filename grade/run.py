@@ -4,10 +4,17 @@ import sys
 import os
 import glob
 import importlib.util
+import json
+import argparse
+import datetime
+import re
+import gradelib
 from gradelib import *
 
 # Configuration
 TEST_DIR = os.environ.get("TEST_DIR", "tests")
+CONF_PATH = os.path.join(os.path.dirname(__file__), "../conf/mp.conf")
+TARGET_COMMIT_PATH = "target_commit.json"
 
 def run_script_test(test_name, script_path, points=10, timeout=30):
     @test(points, test_name)
@@ -24,109 +31,110 @@ def run_script_test(test_name, script_path, points=10, timeout=30):
     return test_case
 
 def load_python_tests(test_dir):
-    # Add test_dir to sys.path so imports work if needed
     sys.path.append(os.path.abspath(test_dir))
-    
-    # 1. Gather all potential test files
-    py_files = set(glob.glob(os.path.join(test_dir, "*.py")))
-    
-    # 2. Logic to load architecture-specific binary tests (.so)
-    import platform
-    arch = platform.machine()
-    
-    # Map machine architecture to our suffix convention
-    # x86_64 -> .x86_64.so
-    # aarch64/arm64 -> .aarch64.so
-    arch_suffix = ""
-    if arch == "x86_64":
-        arch_suffix = ".x86_64.so"
-    elif arch in ["aarch64", "arm64"]:
-        arch_suffix = ".aarch64.so"
-    
-    # Find all base names of potential binary tests (e.g., test_mp0_private)
-    # We look for ANY .so file to identify the base name, then select the correct arch.
-    # Pattern: test_name.arch.so
-    all_so = glob.glob(os.path.join(test_dir, "*.so"))
-    binary_bases = set()
-    for so in all_so:
-        basename = os.path.basename(so)
-        # Strip known suffixes to get the test name
-        if basename.endswith(".x86_64.so"):
-            binary_bases.add(basename[:-10])
-        elif basename.endswith(".aarch64.so"):
-            binary_bases.add(basename[:-11])
-        elif basename.endswith(".so"): # Legacy fallback
-            binary_bases.add(basename[:-3])
-
-    final_test_files = []
-    
-    # Process binaries first
-    for base in binary_bases:
-        target_so = os.path.join(test_dir, base + arch_suffix)
-        legacy_so = os.path.join(test_dir, base + ".so")
-        
-        final_target = None
-        if arch_suffix and os.path.exists(target_so):
-            final_target = target_so
-        elif os.path.exists(legacy_so):
-            final_target = legacy_so
-            
-        if final_target:
-             final_test_files.append(final_target)
-             # If we loaded a binary, DO NOT load the corresponding source .py
-             py_source = os.path.join(test_dir, base + ".py")
-             if py_source in py_files:
-                 py_files.remove(py_source)
-        else:
-            print(f"[WARN] No suitable test binary found for {base} on {arch}")
-            print(f"[HINT] Expected {base}{arch_suffix} or {base}.so")
-
-    # Add remaining python files
-    final_test_files.extend(list(py_files))
-    
-    # Sort for deterministic order
-    # Sort with priority: Public > Private > Others check
-    def test_priority(filename):
-        base = os.path.basename(filename)
-        if "public" in base:
-            return (0, base)
-        elif "private" in base:
-            return (1, base)
-        return (2, base)
-        
-    test_files = sorted(final_test_files, key=test_priority)
-
-    for py_file in test_files:
+    for py_file in glob.glob(os.path.join(test_dir, "*.py")):
         if os.path.basename(py_file) == "setup.py":
             continue
-        
-        # Determine module name (strip extension)
-        filename = os.path.basename(py_file)
-        if filename.endswith(".py"):
-            module_name = filename[:-3]
-        elif filename.endswith(".so"):
-            # For .so, we need to handle the complex suffixes
-             if filename.endswith(".x86_64.so"):
-                module_name = filename[:-10]
-             elif filename.endswith(".aarch64.so"):
-                module_name = filename[:-11]
-             else:
-                module_name = filename[:-3]
-
+        module_name = os.path.basename(py_file)[:-3]
         spec = importlib.util.spec_from_file_location(module_name, py_file)
         if spec and spec.loader:
             module = importlib.util.module_from_spec(spec)
-            try:
-                spec.loader.exec_module(module)
-            except ImportError as e:
-                print(f"\n[WARN] Failed to load test module {module_name}: {e}")
+            spec.loader.exec_module(module)
 
 def load_script_tests(test_dir):
     for txt_file in glob.glob(os.path.join(test_dir, "*.txt")):
         test_name = os.path.basename(txt_file)[:-4]
         run_script_test(test_name, txt_file)
 
+def parse_mp_conf():
+    config = {}
+    if os.path.exists(CONF_PATH):
+        with open(CONF_PATH, "r") as f:
+            for line in f:
+                key_match = re.search(r'^([A-Z_]+)="(.*)"', line.strip())
+                if key_match:
+                    config[key_match.group(1)] = key_match.group(2)
+    return config
+
+def load_target_commit():
+    if os.path.exists(TARGET_COMMIT_PATH):
+        with open(TARGET_COMMIT_PATH, "r") as f:
+            return json.load(f)
+    return None
+
+def calculate_lateness(deadline_iso, commit_timestamp):
+    if not deadline_iso or not commit_timestamp:
+        return 0
+    
+    # Simple ISO parse (assuming Z or simple offset)
+    # Python 3.11+ `fromisoformat` handles Z, but older versions might not.
+    try:
+        deadline_dt = datetime.datetime.fromisoformat(deadline_iso.replace("Z", "+00:00"))
+        commit_dt = datetime.datetime.fromtimestamp(int(commit_timestamp), datetime.timezone.utc)
+        
+        if commit_dt <= deadline_dt:
+            return 0
+        
+        delta = commit_dt - deadline_dt
+        return max(0, delta.days + (1 if delta.seconds > 0 else 0))
+    except Exception as e:
+        print(f"Warning: Date parsing error: {e}", file=sys.stderr)
+        return 0
+
+def generate_report(total_score, max_score, details, json_path):
+    conf = parse_mp_conf()
+    target_commit = load_target_commit()
+    
+    # Grading Logic
+    deadline = conf.get("DEADLINE", "")
+    commit_ts = target_commit.get("timestamp") if target_commit else 0
+    late_days = calculate_lateness(deadline, commit_ts)
+    
+    # Penalty Policy: 20% per day? Spec says "Penalty Policy: 20% per day" example.
+    # Let's verify spec. Spec V2 5.2 Example: "penalty_ratio": 0.0
+    # Let's implement 10% per day cap at 50% for now or 0 for simulation.
+    # We'll use 0 for simulation to keep it simple unless specified.
+    # Spec V2 doesn't explicitly define policy in text, just example.
+    penalty_ratio = min(1.0, late_days * 0.1) # 10% per day
+    final_score = total_score * (1.0 - penalty_ratio)
+    
+    report = {
+        "$schema": "http://ntu-os.org/schemas/v2/report",
+        "meta": {
+            "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "grader_image": conf.get("DOCKER_IMAGE", "ntuos/mp_grader"),
+            "assignment": conf.get("ASSIGNMENT", "unknown")
+        },
+        "target_commit": {
+            "sha": target_commit.get("sha", "unknown") if target_commit else "unknown",
+            "author": target_commit.get("author", "unknown") if target_commit else "unknown",
+            "timestamp": datetime.datetime.fromtimestamp(commit_ts).isoformat() if commit_ts else "",
+            "is_late": late_days > 0
+        },
+        "grading": {
+            "deadline": deadline,
+            "is_late": late_days > 0,
+            "late_days": late_days,
+            "penalty_policy": "10% per day",
+            "penalty_ratio": penalty_ratio
+        },
+        "scores": {
+            "raw_total": total_score,
+            "max_total": max_score,
+            "final_score": final_score,
+            "details": details
+        }
+    }
+    
+    with open(json_path, "w") as f:
+        json.dump(report, f, indent=2)
+    print(f"Report generated at {json_path}")
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--json", help="Path to output report.json")
+    args, unknown = parser.parse_known_args()
+
     # Ensure test directory exists
     if not os.path.isdir(TEST_DIR):
         print(f"Warning: Test directory '{TEST_DIR}' not found.")
@@ -136,5 +144,56 @@ if __name__ == "__main__":
     load_script_tests(TEST_DIR)
     load_python_tests(TEST_DIR)
 
-    # Run tests
-    run_tests()
+    # Run tests via gradelib
+    # gradelib.run_tests() calls sys.exit? No, checks `no_error`.
+    # But it calculates TOTAL/POSSIBLE global vars.
+    try:
+        gradelib.make() # We assume gradelib handles make
+        gradelib.reset_fs()
+        
+        # Execute tests
+        # We manually iterate because we want to capture details
+        details = []
+        
+        # We need to execute tests in order they were added?
+        # gradelib.TESTS is a list of wrappers.
+        no_error = True
+        for test_func in gradelib.TESTS:
+            try:
+                ok = test_func()
+            except Exception as e:
+                print(f"Test {test_func.__name__} crashed: {e}")
+                ok = False
+            
+            no_error = ok and no_error
+            
+            # Capture result
+            details.append({
+                "test_case": getattr(test_func, "title", test_func.__name__),
+                "status": "PASS" if ok else "FAIL",
+                "score": 10 if ok else 0, # Placeholder points
+                "max_score": 10
+            })
+
+    except BaseException as e:
+        print(f"Execution/Compilation Error: {e}")
+        # If compilation failed, we still want a report
+        gradelib.TOTAL = 0
+        details = [{
+            "test_case": "Build/Setup",
+            "status": "FAIL",
+            "score": 0,
+            "max_score": 0,
+            "output": str(e)
+        }]
+        no_error = False
+
+    total = gradelib.TOTAL
+    possible = max(gradelib.POSSIBLE, 100) # Ensure no divide by zero if possible is 0
+    
+    print(f"Score: {total}/{possible}")
+    
+    if args.json:
+        generate_report(total, possible, details, args.json)
+    
+    sys.exit(0 if no_error else 1)

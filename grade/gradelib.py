@@ -72,7 +72,7 @@ def test(points, title=None, parent=None):
                 print("    %s" % fail.replace("\n", "\n    "))
             else:
                 TOTAL += real_point
-            print()
+                print()
             for callback in run_test.on_finish:
                 callback(fail)
             CURRENT_TEST = None
@@ -174,10 +174,10 @@ def assert_lines_match(text, *regexps, **kw):
                 return
             else:
                 # Found the first match, but the following lines do not match
-                raise AssertionError(f"Line {i} do not match.\nGot:\n{text}")
+                raise AssertionError(f"Line {i} do not match.")
 
     # If no starting line is found that matches the first regexp
-    raise AssertionError(f"No line found that matches the first regexp.\nGot:\n{text}")
+    raise AssertionError("No line found that matches the first regexp.")
 
 ##################################################################
 # Utilities
