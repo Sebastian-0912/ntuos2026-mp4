@@ -33,14 +33,11 @@ hint() {
 SCRIPT_DIR=$(realpath "$(dirname "$0")")
 
 # Load configuration
-if [ -f "$SCRIPT_DIR/conf/mp.conf" ]; then
-    source "$SCRIPT_DIR/conf/mp.conf"
-elif [ -f "mp.conf" ]; then
-    # Fallback for legacy location
-    warn "Loading config from root mp.conf (Deprecated). Please move to conf/mp.conf"
-    source mp.conf
+if [ -f "$SCRIPT_DIR/mp.conf" ]; then
+    source "$SCRIPT_DIR/mp.conf"
 else
-    warn "conf/mp.conf not found. Using defaults."
+    error "mp.conf not found. Using defaults."
+    exit 1
 fi
 
 # Configuration Defaults
@@ -233,7 +230,7 @@ check_ta_commit() {
 sanitize() {
     info "Starting sanitization..."
     if [ -z "$TRUSTED_REPO" ]; then
-        error "TRUSTED_REPO not defined in conf/mp.conf"
+        error "TRUSTED_REPO not defined in mp.conf"
         exit 1
     fi
 

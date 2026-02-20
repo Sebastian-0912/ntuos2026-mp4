@@ -7,7 +7,7 @@ import re
 
 def load_config():
     """Reads TA_EMAILS from conf/mp.conf"""
-    config_path = os.path.join(os.path.dirname(__file__), '../conf/mp.conf')
+    config_path = os.path.join(os.path.dirname(__file__), '../mp.conf')
     ta_emails = set()
     
     if os.path.exists(config_path):

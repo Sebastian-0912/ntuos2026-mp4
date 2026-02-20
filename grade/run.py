@@ -13,7 +13,7 @@ from gradelib import *
 
 # Configuration
 TEST_DIR = os.environ.get("TEST_DIR", "tests")
-CONF_PATH = os.path.join(os.path.dirname(__file__), "../conf/mp.conf")
+CONF_PATH = os.path.join(os.path.dirname(__file__), "../mp.conf")
 TARGET_COMMIT_PATH = "target_commit.json"
 
 def run_script_test(test_name, script_path, points=10, timeout=30):

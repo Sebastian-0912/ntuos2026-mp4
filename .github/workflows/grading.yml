@@ -34,7 +34,7 @@ jobs:
           python3 grade/verify_committer.py
         env:
           # Pass TA Emails via Env (or read from mp.conf inside script)
-          # The script will read conf/mp.conf directly.
+          # The script will read mp.conf directly.
           PYTHONUNBUFFERED: "1"
 
       - name: Execute Tests (Grading)
