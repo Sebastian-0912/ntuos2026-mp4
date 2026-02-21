@@ -192,7 +192,7 @@ if __name__ == "__main__":
         no_error = False
 
     total = gradelib.TOTAL
-    possible = max(gradelib.POSSIBLE, 100) # Ensure no divide by zero if possible is 0
+    possible = gradelib.POSSIBLE
     
     print(f"Score: {total}/{possible}")
     
