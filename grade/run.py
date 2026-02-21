@@ -144,6 +144,9 @@ if __name__ == "__main__":
     load_script_tests(TEST_DIR)
     load_python_tests(TEST_DIR)
 
+    # Initialize options for gradelib since we bypass run_tests()
+    gradelib.options = argparse.Namespace(color="auto", verbose=False)
+
     # Run tests via gradelib
     # gradelib.run_tests() calls sys.exit? No, checks `no_error`.
     # But it calculates TOTAL/POSSIBLE global vars.
