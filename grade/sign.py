@@ -34,7 +34,7 @@ def sign_report(report_path="report.json"):
             print(f"Warning: {report_path} invalid/missing ({e}). Generating fallback report.", file=sys.stderr)
             import datetime
             data = {
-                "$schema": "http://ntu-os.org/schemas/v2/report",
+                "$schema": "http://ntu-os.org/schemas/v1/report",
                 "meta": {
                     "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                     "grader_image": "unknown",

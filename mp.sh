@@ -201,7 +201,7 @@ ensure_docker_start_cmd() {
 ensure_docker_start_cmd
 
 # ------------------------------------------------------------------------------
-# 4. V2 Grading & Sanitization Logic
+# 4. Grading & Sanitization Logic
 # ------------------------------------------------------------------------------
 
 check_ta_commit() {

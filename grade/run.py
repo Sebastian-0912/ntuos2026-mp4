@@ -15,6 +15,7 @@ from gradelib import *
 TEST_DIR = os.environ.get("TEST_DIR", "tests")
 CONF_PATH = os.path.join(os.path.dirname(__file__), "../mp.conf")
 TARGET_COMMIT_PATH = "target_commit.json"
+STUDENT_CONF_PATH = os.path.join(os.path.dirname(__file__), "../student.conf")
 
 def run_script_test(test_name, script_path, points=10, timeout=30):
     @test(points, test_name)
@@ -55,6 +56,27 @@ def parse_mp_conf():
                 if key_match:
                     config[key_match.group(1)] = key_match.group(2)
     return config
+
+def parse_student_conf():
+    config = {
+        "STUDENT_ID": "unknown",
+        "STUDENT_NAME": "unknown",
+        "GITHUB_USERNAME": "unknown"
+    }
+    if os.path.exists(STUDENT_CONF_PATH):
+        with open(STUDENT_CONF_PATH, "r") as f:
+            for line in f:
+                key_match = re.search(r'^([A-Z_]+)\s*=\s*"?([^"]*)"?', line.strip())
+                if key_match:
+                    config[key_match.group(1)] = key_match.group(2)
+    return config
+
+def validate_student_conf(student_conf):
+    invalid_strs = ["", "b00000000", "your name", "your-github-id", "unknown"]
+    id_valid = student_conf.get("STUDENT_ID", "").lower() not in invalid_strs
+    name_valid = student_conf.get("STUDENT_NAME", "").lower() not in invalid_strs
+    github_valid = student_conf.get("GITHUB_USERNAME", "").lower() not in invalid_strs
+    return id_valid and name_valid and github_valid
 
 def load_target_commit():
     if os.path.exists(TARGET_COMMIT_PATH):
@@ -98,8 +120,28 @@ def generate_report(total_score, max_score, details, json_path):
     penalty_ratio = min(1.0, late_days * 0.1) # 10% per day
     final_score = total_score * (1.0 - penalty_ratio)
     
+    student_conf = parse_student_conf()
+    is_identity_valid = validate_student_conf(student_conf)
+    
+    if not is_identity_valid:
+        details.insert(0, {
+            "test_case": "Identity Validation (student.conf)",
+            "status": "WARN",
+            "score": 0,
+            "max_score": 0,
+            "output": "Warning: student.conf is missing or contains default/invalid values."
+        })
+    else:
+        details.insert(0, {
+            "test_case": "Identity Validation (student.conf)",
+            "status": "PASS",
+            "score": 0,
+            "max_score": 0,
+            "output": f"Validated: {student_conf.get('STUDENT_ID')} ({student_conf.get('GITHUB_USERNAME')})"
+        })
+    
     report = {
-        "$schema": "http://ntu-os.org/schemas/v2/report",
+        "$schema": "http://ntu-os.org/schemas/v1/report",
         "meta": {
             "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "grader_image": conf.get("DOCKER_IMAGE", "ntuos/mp_grader"),
@@ -110,6 +152,12 @@ def generate_report(total_score, max_score, details, json_path):
             "author": target_commit.get("author", "unknown") if target_commit else "unknown",
             "timestamp": datetime.datetime.fromtimestamp(commit_ts).isoformat() if commit_ts else "",
             "is_late": late_days > 0
+        },
+        "student_info": {
+            "student_id": student_conf.get("STUDENT_ID"),
+            "name": student_conf.get("STUDENT_NAME"),
+            "github_username": student_conf.get("GITHUB_USERNAME"),
+            "is_valid": is_identity_valid
         },
         "grading": {
             "deadline": deadline,
@@ -193,6 +241,15 @@ if __name__ == "__main__":
 
     total = gradelib.TOTAL
     possible = gradelib.POSSIBLE
+    
+    student_conf = parse_student_conf()
+    is_valid = validate_student_conf(student_conf)
+    if not is_valid:
+        print("\n" + "="*50)
+        print("[WARN] Identity Configuration Missing!")
+        print("Your student.conf contains default or missing values.")
+        print("Please configure it before your final submission.")
+        print("="*50 + "\n")
     
     print(f"Score: {total}/{possible}")
     

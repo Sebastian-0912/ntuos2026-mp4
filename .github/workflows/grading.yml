@@ -1,4 +1,4 @@
-name: Grading System V2
+name: Grading System
 
 on:
   push:
