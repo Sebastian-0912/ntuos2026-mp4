@@ -31,9 +31,17 @@ def run_script_test(test_name, script_path, points=10, timeout=30):
         
     return test_case
 
+def get_test_rank(filename):
+    name = os.path.basename(filename).lower()
+    if 'public' in name: return 0
+    if 'private' in name: return 2
+    return 1
+
 def load_python_tests(test_dir):
     sys.path.append(os.path.abspath(test_dir))
-    for py_file in glob.glob(os.path.join(test_dir, "*.py")):
+    py_files = glob.glob(os.path.join(test_dir, "*.py"))
+    py_files = sorted(py_files, key=lambda p: (get_test_rank(p), p))
+    for py_file in py_files:
         if os.path.basename(py_file) == "setup.py":
             continue
         module_name = os.path.basename(py_file)[:-3]
@@ -43,7 +51,9 @@ def load_python_tests(test_dir):
             spec.loader.exec_module(module)
 
 def load_script_tests(test_dir):
-    for txt_file in glob.glob(os.path.join(test_dir, "*.txt")):
+    txt_files = glob.glob(os.path.join(test_dir, "*.txt"))
+    txt_files = sorted(txt_files, key=lambda p: (get_test_rank(p), p))
+    for txt_file in txt_files:
         test_name = os.path.basename(txt_file)[:-4]
         run_script_test(test_name, txt_file)
 
