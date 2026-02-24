@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+      - 'ntuos2026/*'
     paths-ignore:
       - 'README.md'
       - 'doc/**'
