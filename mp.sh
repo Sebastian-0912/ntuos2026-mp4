@@ -41,9 +41,7 @@ else
 fi
 
 # Configuration Defaults
-CONTAINER_NAME="${MP_ID:-mp_container}"
 IMAGE_NAME="${DOCKER_IMAGE:-ntuos/mp2}" # Default fallback
-TEST_DIR_PATH="${TEST_DIR:-tests}"
 
 # ------------------------------------------------------------------------------
 # 2. Environment Checks
