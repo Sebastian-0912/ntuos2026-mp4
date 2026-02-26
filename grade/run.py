@@ -130,6 +130,9 @@ def generate_report(total_score, max_score, details, json_path):
     penalty_ratio = min(1.0, late_days * 0.1) # 10% per day
     final_score = total_score * (1.0 - penalty_ratio)
     
+    is_private_str = os.environ.get("REPO_IS_PRIVATE", "true").lower()
+    is_private = is_private_str == "true"
+
     student_conf = parse_student_conf()
     is_identity_valid = validate_student_conf(student_conf)
     
@@ -174,7 +177,8 @@ def generate_report(total_score, max_score, details, json_path):
             "is_late": late_days > 0,
             "late_days": late_days,
             "penalty_policy": "10% per day",
-            "penalty_ratio": penalty_ratio
+            "penalty_ratio": penalty_ratio,
+            "is_private": is_private
         },
         "scores": {
             "raw_total": total_score,

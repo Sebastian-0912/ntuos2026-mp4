@@ -44,6 +44,7 @@ jobs:
           ./mp.sh grade --json report.json
         env:
           OFFICIAL_GRADING: "1"
+          REPO_IS_PRIVATE: ${{ github.event.repository.private }}
 
       - name: Generate Signed Report
         if: always()

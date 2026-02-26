@@ -115,14 +115,14 @@ We have designed a **Dual-Layer CI/CD Grading Architecture** to let you track yo
 ### 1. Before Deadline: Public Test Pre-check (CI)
 Immediately after you type `git push` on your terminal, go to your GitHub repository webpage and click the **`Actions`** tab at the top.
 You will see our cloud system automatically grading the code you just submitted! If it passes, you will see a green checkmark ✅. Click on the workflow run to see exactly how many points you earned on the Public Testcases.
-> 💡 You can push as many times as you want! Before the deadline, every push triggers the Actions workflow. We will uniquely grade the last successful push made before the deadline.
+> 💡 You can push as many times as you want to verify your code against public tests. Remember, however, that your actual final grade will be determined by the TA's automated system after the deadline.
 
 ### 2. After Deadline: TA Final Evaluation (Private Test & Report Artifact)
 Once the deadline passes, you must not push any more changes.
-At this time, the TA automated system will directly **Push the hidden Private Testcases and the final strict scoring scripts into your Private Repo**.
+At this time, the TA automated system will inject hidden Private Testcases and final strict scoring scripts into your Private Repo by triggering a specific CI run.
 
-This automated TA push will trigger one final, unforgiving `Actions` run. This run evaluates both public and previously hidden conditions. Most importantly, it generates a **Digitally Signed** grade report artifact: `report.json`.
+This automated TA push will trigger one final, unforgiving `Actions` run. This run evaluates both public and previously hidden conditions. Most importantly, it generates the ultimate grade report artifact: `report.json`.
 
-The TAs will download this cryptographically signed artifact directly from your GitHub Actions to record your true final score. Therefore, ensuring your code compiles flawlessly in a headless Linux environment and that your `student.conf` is perfectly correct is the key to earning your grade!
+The TAs will extract this artifact directly from your GitHub Actions to record your true final score. Therefore, ensuring your code compiles flawlessly in a headless Linux environment and that your `student.conf` is perfectly correct and your repository is kept private is the key to earning your grade!
 
 Good luck and happy coding! 🚀
