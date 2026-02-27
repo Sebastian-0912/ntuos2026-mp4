@@ -113,6 +113,54 @@ def calculate_lateness(deadline_iso, commit_timestamp):
         print(f"Warning: Date parsing error: {e}", file=sys.stderr)
         return 0
 
+def generate_markdown(total_score, max_score, details, md_path):
+    student_conf = parse_student_conf()
+    is_identity_valid = validate_student_conf(student_conf)
+
+    lines = []
+
+    # Part 1: Information
+    lines.append("## Information")
+    lines.append("")
+    if not is_identity_valid:
+        lines.append("# ⚠️ Identity Configuration Missing!")
+        lines.append("Your `student.conf` contains default or missing values.")
+        lines.append("Please configure it before your final submission.")
+    else:
+        lines.append(f"- **Student ID**: {student_conf.get('STUDENT_ID')}")
+        lines.append(f"- **Name**: {student_conf.get('STUDENT_NAME')}")
+        lines.append(f"- **GitHub Username**: {student_conf.get('GITHUB_USERNAME')}")
+    lines.append("")
+
+    # Part 2: Grades (mermaid xychart)
+    lines.append("## Grades")
+    lines.append("")
+
+    test_details = [d for d in details if d.get("max_score", 0) > 0]
+
+    if test_details:
+        test_names = [d["test_case"] for d in test_details]
+        max_scores_list = [d["max_score"] for d in test_details]
+        actual_scores_list = [d["score"] for d in test_details]
+        y_max = max(max_scores_list)
+
+        x_labels = ", ".join(f'"{name}"' for name in test_names)
+        bar_max = ", ".join(str(s) for s in max_scores_list)
+        bar_actual = ", ".join(str(s) for s in actual_scores_list)
+
+        lines.append("```mermaid")
+        lines.append("xychart-beta horizontal")
+        lines.append(f'    x-axis [{x_labels}]')
+        lines.append(f'    y-axis "Score" 0 --> {y_max}')
+        lines.append(f'    bar [{bar_max}]')
+        lines.append(f'    bar [{bar_actual}]')
+        lines.append("```")
+    lines.append("")
+
+    with open(md_path, "w") as f:
+        f.write("\n".join(lines))
+    print(f"Markdown report generated at {md_path}")
+
 def generate_report(total_score, max_score, details, json_path):
     conf = parse_mp_conf()
     target_commit = load_target_commit()
@@ -195,6 +243,7 @@ def generate_report(total_score, max_score, details, json_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", help="Path to output report.json")
+    parser.add_argument("--markdown", help="Path to output report.md")
     args, unknown = parser.parse_known_args()
 
     # Ensure test directory exists
@@ -267,7 +316,10 @@ if __name__ == "__main__":
     
     print(f"Score: {total}/{possible}")
     
+    if args.markdown:
+        generate_markdown(total, possible, details, args.markdown)
+
     if args.json:
         generate_report(total, possible, details, args.json)
-    
+
     sys.exit(0 if no_error else 1)
