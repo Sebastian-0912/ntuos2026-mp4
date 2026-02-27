@@ -303,8 +303,8 @@ if __name__ == "__main__":
             details.append({
                 "test_case": getattr(test_func, "title", test_func.__name__),
                 "status": "PASS" if ok else "FAIL",
-                "score": 10 if ok else 0, # Placeholder points
-                "max_score": 10
+                "score": getattr(test_func, "score", 0),
+                "max_score": getattr(test_func, "points", 0),
             })
 
     except BaseException as e:
