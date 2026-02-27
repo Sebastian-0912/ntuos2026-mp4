@@ -8,7 +8,6 @@ on:
       - 'ntuos2026/*'
     paths-ignore:
       - 'README.md'
-      - 'grade-report.md'
       - 'doc/**'
   workflow_dispatch: {}
 
@@ -48,14 +47,12 @@ jobs:
           OFFICIAL_GRADING: "1"
           REPO_IS_PRIVATE: ${{ github.event.repository.private }}
 
-      - name: Commit Grade Report
+      - name: Add Visual Summary
         if: always()
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add grade-report.md
-          git diff --cached --quiet || git commit -m "docs: update grade-report.md"
-          git push
+          if [ -f grade-report.md ]; then
+            cat grade-report.md >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Upload Artifact
         if: always()
