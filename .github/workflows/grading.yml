@@ -8,6 +8,7 @@ on:
       - 'ntuos2026/*'
     paths-ignore:
       - 'README.md'
+      - 'grade-report.md'
       - 'doc/**'
   workflow_dispatch: {}
 
@@ -42,10 +43,19 @@ jobs:
       - name: Execute Tests (Grading)
         id: test
         run: |
-          ./mp.sh grade --json report.json --markdown report.md
+          ./mp.sh grade --json report.json --markdown grade-report.md
         env:
           OFFICIAL_GRADING: "1"
           REPO_IS_PRIVATE: ${{ github.event.repository.private }}
+
+      - name: Commit Grade Report
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add grade-report.md
+          git diff --cached --quiet || git commit -m "docs: update grade-report.md"
+          git push
 
       - name: Upload Artifact
         if: always()
