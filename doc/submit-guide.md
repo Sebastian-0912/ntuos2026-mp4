@@ -65,7 +65,7 @@ Since GitHub usernames can be anything (like `SuperHacker2000`), the TAs cannot 
    STUDENT_NAME="Your Real Name"         <-- Replace with your real name
    GITHUB_USERNAME="SuperHacker2000"     <-- Replace with the EXACT GitHub account you are using
    ```
-3. ⚠️ **[Identity Verification Penalty]**: If you submit your homework with default values in `student.conf`, or if your `GITHUB_USERNAME` does not match the account pushing the code, the TAs cannot identify your submission. **Your entire assignment will be strictly graded as 0 points!** Please configure this file on day one.
+3. ⚠️ **[Identity Verification Penalty]**: If you submit your homework with default values in `student.conf`, your local **commit and push will be blocked**. Even if you bypass these checks, the grading system will detect the invalid identity and **force your score to 0 points**. Please configure this file correctly on day one.
 
 ---
 

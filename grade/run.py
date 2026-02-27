@@ -151,6 +151,9 @@ def gather_verdict():
     # Penalty Policy: 20% per day.
     penalty_ratio = min(1.0, late_days * 0.2)
     student_conf = parse_student_conf()
+    is_identity_valid = validate_student_conf(student_conf)
+    if not is_identity_valid:
+        penalty_ratio = 1.0 # Force zero score if identity is invalid
     return {
         "conf": conf,
         "target_commit": target_commit,
@@ -159,7 +162,7 @@ def gather_verdict():
         "late_days": late_days,
         "penalty_ratio": penalty_ratio,
         "student_conf": student_conf,
-        "is_identity_valid": validate_student_conf(student_conf),
+        "is_identity_valid": is_identity_valid,
     }
 
 def generate_markdown(total_score, max_score, details, md_path, verdict):
@@ -230,10 +233,10 @@ def generate_json(total_score, max_score, details, json_path, verdict):
     if not is_identity_valid:
         details.insert(0, {
             "test_case": "Identity Validation (student.conf)",
-            "status": "WARN",
+            "status": "FAIL",
             "score": 0,
             "max_score": 0,
-            "output": "Warning: student.conf is missing or contains default/invalid values."
+            "output": "CRITICAL: Default identity detected in student.conf. Score forced to 0."
         })
     else:
         details.insert(0, {
@@ -269,6 +272,7 @@ def generate_json(total_score, max_score, details, json_path, verdict):
             "late_days": late_days,
             "penalty_policy": "20% per day",
             "penalty_ratio": penalty_ratio,
+            "identity_failed": not is_identity_valid,
             "is_private": is_private
         },
         "scores": {
