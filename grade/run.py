@@ -119,12 +119,8 @@ def gather_verdict():
     commit_ts = target_commit.get("timestamp") if target_commit else 0
     deadline = conf.get("DEADLINE", "")
     late_days = calculate_lateness(deadline, commit_ts)
-    # Penalty Policy: 20% per day? Spec says "Penalty Policy: 20% per day" example.
-    # Let's verify spec. Spec V2 5.2 Example: "penalty_ratio": 0.0
-    # Let's implement 10% per day cap at 50% for now or 0 for simulation.
-    # We'll use 0 for simulation to keep it simple unless specified.
-    # Spec V2 doesn't explicitly define policy in text, just example.
-    penalty_ratio = min(1.0, late_days * 0.1)
+    # Penalty Policy: 20% per day.
+    penalty_ratio = min(1.0, late_days * 0.2)
     student_conf = parse_student_conf()
     return {
         "conf": conf,
@@ -242,7 +238,7 @@ def generate_json(total_score, max_score, details, json_path, verdict):
             "deadline": deadline,
             "is_late": late_days > 0,
             "late_days": late_days,
-            "penalty_policy": "10% per day",
+            "penalty_policy": "20% per day",
             "penalty_ratio": penalty_ratio,
             "is_private": is_private
         },
