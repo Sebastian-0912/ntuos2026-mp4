@@ -113,9 +113,34 @@ def calculate_lateness(deadline_iso, commit_timestamp):
         print(f"Warning: Date parsing error: {e}", file=sys.stderr)
         return 0
 
-def generate_markdown(total_score, max_score, details, md_path):
+def gather_verdict():
+    conf = parse_mp_conf()
+    target_commit = load_target_commit()
+    commit_ts = target_commit.get("timestamp") if target_commit else 0
+    deadline = conf.get("DEADLINE", "")
+    late_days = calculate_lateness(deadline, commit_ts)
+    # Penalty Policy: 20% per day? Spec says "Penalty Policy: 20% per day" example.
+    # Let's verify spec. Spec V2 5.2 Example: "penalty_ratio": 0.0
+    # Let's implement 10% per day cap at 50% for now or 0 for simulation.
+    # We'll use 0 for simulation to keep it simple unless specified.
+    # Spec V2 doesn't explicitly define policy in text, just example.
+    penalty_ratio = min(1.0, late_days * 0.1)
     student_conf = parse_student_conf()
-    is_identity_valid = validate_student_conf(student_conf)
+    return {
+        "conf": conf,
+        "target_commit": target_commit,
+        "commit_ts": commit_ts,
+        "deadline": deadline,
+        "late_days": late_days,
+        "penalty_ratio": penalty_ratio,
+        "student_conf": student_conf,
+        "is_identity_valid": validate_student_conf(student_conf),
+    }
+
+def generate_markdown(total_score, max_score, details, md_path, verdict):
+    penalty_ratio = verdict["penalty_ratio"]
+    student_conf = verdict["student_conf"]
+    is_identity_valid = verdict["is_identity_valid"]
 
     lines = []
 
@@ -140,8 +165,9 @@ def generate_markdown(total_score, max_score, details, md_path):
 
     if test_details:
         test_names = [d["test_case"] for d in test_details]
-        max_scores_list = [d["max_score"] for d in test_details]
-        actual_scores_list = [d["score"] for d in test_details]
+        multiplier = 1.0 - penalty_ratio
+        max_scores_list = [d["max_score"] * multiplier for d in test_details]
+        actual_scores_list = [d["score"] * multiplier for d in test_details]
         y_max = max(max_scores_list)
 
         x_labels = ", ".join(f'"{name}"' for name in test_names)
@@ -161,28 +187,20 @@ def generate_markdown(total_score, max_score, details, md_path):
         f.write("\n".join(lines))
     print(f"Markdown report generated at {md_path}")
 
-def generate_report(total_score, max_score, details, json_path):
-    conf = parse_mp_conf()
-    target_commit = load_target_commit()
-    
-    # Grading Logic
-    deadline = conf.get("DEADLINE", "")
-    commit_ts = target_commit.get("timestamp") if target_commit else 0
-    late_days = calculate_lateness(deadline, commit_ts)
-    
-    # Penalty Policy: 20% per day? Spec says "Penalty Policy: 20% per day" example.
-    # Let's verify spec. Spec V2 5.2 Example: "penalty_ratio": 0.0
-    # Let's implement 10% per day cap at 50% for now or 0 for simulation.
-    # We'll use 0 for simulation to keep it simple unless specified.
-    # Spec V2 doesn't explicitly define policy in text, just example.
-    penalty_ratio = min(1.0, late_days * 0.1) # 10% per day
+def generate_json(total_score, max_score, details, json_path, verdict):
+    conf = verdict["conf"]
+    target_commit = verdict["target_commit"]
+    commit_ts = verdict["commit_ts"]
+    deadline = verdict["deadline"]
+    late_days = verdict["late_days"]
+    penalty_ratio = verdict["penalty_ratio"]
+    student_conf = verdict["student_conf"]
+    is_identity_valid = verdict["is_identity_valid"]
+
     final_score = total_score * (1.0 - penalty_ratio)
-    
+
     is_private_str = os.environ.get("REPO_IS_PRIVATE", "true").lower()
     is_private = is_private_str == "true"
-
-    student_conf = parse_student_conf()
-    is_identity_valid = validate_student_conf(student_conf)
     
     if not is_identity_valid:
         details.insert(0, {
@@ -316,10 +334,13 @@ if __name__ == "__main__":
     
     print(f"Score: {total}/{possible}")
     
-    if args.markdown:
-        generate_markdown(total, possible, details, args.markdown)
+    if args.markdown or args.json:
+        verdict = gather_verdict()
 
-    if args.json:
-        generate_report(total, possible, details, args.json)
+        if args.markdown:
+            generate_markdown(total, possible, details, args.markdown, verdict)
+
+        if args.json:
+            generate_json(total, possible, details, args.json, verdict)
 
     sys.exit(0 if no_error else 1)
