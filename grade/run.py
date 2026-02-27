@@ -10,12 +10,34 @@ import datetime
 import re
 import gradelib
 from gradelib import *
+import fnmatch
 
 # Configuration
 TEST_DIR = os.environ.get("TEST_DIR", "tests")
 CONF_PATH = os.path.join(os.path.dirname(__file__), "../mp.conf")
+GRADING_CONF_PATH = os.path.join(os.path.dirname(__file__), "../tests/grading.conf")
 TARGET_COMMIT_PATH = "target_commit.json"
 STUDENT_CONF_PATH = os.path.join(os.path.dirname(__file__), "../student.conf")
+
+def load_grading_config():
+    patterns = []
+    if os.path.exists(GRADING_CONF_PATH):
+        with open(GRADING_CONF_PATH, "r") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    patterns.append(line)
+    # Default to match everything if no config found (for robustness)
+    if not patterns:
+        patterns = ["*.py", "*.txt"]
+    return patterns
+
+def is_test_official(filename, patterns):
+    basename = os.path.basename(filename)
+    for p in patterns:
+        if fnmatch.fnmatch(basename, p):
+            return True
+    return False
 
 def run_script_test(test_name, script_path, points=10, timeout=30):
     @test(points, test_name)
@@ -37,23 +59,30 @@ def get_test_rank(filename):
     if 'private' in name: return 2
     return 1
 
-def load_python_tests(test_dir):
+def load_python_tests(test_dir, patterns):
     sys.path.append(os.path.abspath(test_dir))
     py_files = glob.glob(os.path.join(test_dir, "*.py"))
     py_files = sorted(py_files, key=lambda p: (get_test_rank(p), p))
     for py_file in py_files:
         if os.path.basename(py_file) == "setup.py":
             continue
+        
+        # Set official mode based on grading.conf
+        gradelib.IS_OFFICIAL_MODE = is_test_official(py_file, patterns)
+        
         module_name = os.path.basename(py_file)[:-3]
         spec = importlib.util.spec_from_file_location(module_name, py_file)
         if spec and spec.loader:
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
 
-def load_script_tests(test_dir):
+def load_script_tests(test_dir, patterns):
     txt_files = glob.glob(os.path.join(test_dir, "*.txt"))
     txt_files = sorted(txt_files, key=lambda p: (get_test_rank(p), p))
     for txt_file in txt_files:
+        # Set official mode based on grading.conf
+        gradelib.IS_OFFICIAL_MODE = is_test_official(txt_file, patterns)
+        
         test_name = os.path.basename(txt_file)[:-4]
         run_script_test(test_name, txt_file)
 
@@ -266,8 +295,12 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # Load tests
-    load_script_tests(TEST_DIR)
-    load_python_tests(TEST_DIR)
+    patterns = load_grading_config()
+    load_script_tests(TEST_DIR, patterns)
+    load_python_tests(TEST_DIR, patterns)
+    
+    # Reset official mode for safety
+    gradelib.IS_OFFICIAL_MODE = True
 
     # Initialize options for gradelib since we bypass run_tests()
     gradelib.options = argparse.Namespace(color="auto", verbose=False)

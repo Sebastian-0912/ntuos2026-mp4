@@ -79,6 +79,14 @@ You are now ready to modify `mpX.c` or any other specified files to solve the ma
 
 This command uses an isolated Docker environment on your local machine to simulate the grading process and prints your score for the Public Testcases.
 
+### Adding Your Own Tests
+You are encouraged to create your own test cases in the `tests/` directory:
+- **How to add**: Create a `.py` file (using the `@test` decorator) or a `.txt` file (shell commands) in the `tests/` folder.
+- **Scoring Isolation**: To ensure your official score correctly reflects only TA-provided tests, we use `tests/grading.conf`.
+- **How it works**: 
+  - This file defines which tests are "Official". While you can modify it locally, the **TA will overwrite it during official grading**.
+  - Any test file NOT in the official list will still run, but its result will not affect the final official total score.
+
 ---
 
 ## Step 6: Save and Upload (Git Commit & Push)
