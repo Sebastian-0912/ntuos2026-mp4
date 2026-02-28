@@ -172,8 +172,15 @@ check_environment() {
     check_hooks
 }
 
-# Run Checks early
-check_environment
+# Run Checks early (Skip for init/setup)
+case "$1" in
+    "init"|"setup"|"")
+        # For init or no command, skip blocking environment checks
+        ;;
+    *)
+        check_environment
+        ;;
+esac
 
 # ------------------------------------------------------------------------------
 # 3. Helper Functions
