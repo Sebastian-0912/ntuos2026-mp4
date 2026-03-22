@@ -59,10 +59,14 @@ def get_test_rank(filename):
     if 'private' in name: return 2
     return 1
 
+def natural_sort_key(s):
+    return [int(text) if text.isdigit() else text.lower()
+            for text in re.split('([0-9]+)', s)]
+
 def load_python_tests(test_dir, patterns):
     sys.path.append(os.path.abspath(test_dir))
     py_files = glob.glob(os.path.join(test_dir, "*.py"))
-    py_files = sorted(py_files, key=lambda p: (get_test_rank(p), p))
+    py_files = sorted(py_files, key=lambda p: (get_test_rank(p), natural_sort_key(p)))
     for py_file in py_files:
         if os.path.basename(py_file) == "setup.py":
             continue
@@ -78,7 +82,7 @@ def load_python_tests(test_dir, patterns):
 
 def load_script_tests(test_dir, patterns):
     txt_files = glob.glob(os.path.join(test_dir, "*.txt"))
-    txt_files = sorted(txt_files, key=lambda p: (get_test_rank(p), p))
+    txt_files = sorted(txt_files, key=lambda p: (get_test_rank(p), natural_sort_key(p)))
     for txt_file in txt_files:
         # Set official mode based on grading.conf
         gradelib.IS_OFFICIAL_MODE = is_test_official(txt_file, patterns)
@@ -320,10 +324,20 @@ if __name__ == "__main__":
         # We manually iterate because we want to capture details
         details = []
         
-        # We need to execute tests in order they were added?
-        # gradelib.TESTS is a list of wrappers.
+        # Determine which tests to run based on command line arguments
+        tests_to_run = []
+        if unknown:
+            for test_pattern in unknown:
+                for test_func in gradelib.TESTS:
+                    title = getattr(test_func, "title", test_func.__name__)
+                    if fnmatch.fnmatch(title, test_pattern) or test_pattern in title:
+                        if test_func not in tests_to_run:
+                            tests_to_run.append(test_func)
+        else:
+            tests_to_run = gradelib.TESTS
+
         no_error = True
-        for test_func in gradelib.TESTS:
+        for test_func in tests_to_run:
             try:
                 ok = test_func()
             except Exception as e:

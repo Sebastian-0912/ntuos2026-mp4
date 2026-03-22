@@ -236,8 +236,10 @@ def color(name, text):
     return text
 
 def reset_fs():
-    if os.path.exists("obj/fs/clean-fs.img"):
-        shutil.copyfile("obj/fs/clean-fs.img", "obj/fs/fs.img")
+    if not os.path.exists("clean-fs.img") and os.path.exists("fs.img"):
+        shutil.copyfile("fs.img", "clean-fs.img")
+    if os.path.exists("clean-fs.img"):
+        shutil.copyfile("clean-fs.img", "fs.img")
 
 def random_str(n=8):
     letters = string.ascii_letters + string.digits
