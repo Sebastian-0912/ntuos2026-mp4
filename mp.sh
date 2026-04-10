@@ -40,13 +40,23 @@ else
 fi
 
 # Configuration Defaults
-IMAGE_NAME="${DOCKER_IMAGE:-ntuos/mp2}" # Default fallback
+# GitHub Action will use mp.conf to set DOCKER_IMAGE
+if [ -t 1 ] && [ -z "$GITHUB_ACTIONS" ]; then
+    IMAGE_NAME="${DOCKER_IMAGE:-ntuos/mp2}"
+else
+    IMAGE_NAME="${ACTION_IMAGE:-ntuos/mp2}"
+fi
+CONTAINER_NAME="ntuos2026-$ASSIGNMENT"
 
 # ------------------------------------------------------------------------------
 # 2. Environment Checks
 # ------------------------------------------------------------------------------
 
 check_os() {
+    # Skip os check in GITHUB_ACTIONS
+    if [ -n "$GITHUB_ACTIONS" ]; then
+        return
+    fi
     local os_name
     os_name=$(uname -s)
     local kernel_release
@@ -80,8 +90,8 @@ check_os() {
 }
 
 check_docker() {
-    # Simulation Mode Bypass
-    if [ -n "$SIMULATION_MODE" ]; then
+    # Simulation Mode and GitHub Action Bypass
+    if [ -n "$GITHUB_ACTIONS" ] || [ -n "$SIMULATION_MODE" ]; then
         return
     fi
 
@@ -122,6 +132,7 @@ check_docker() {
 
     # 2.3 Configure Daemon Options
     DOCKER_CMD_OPTS=()
+    DOCKER_RUN_OPTS=()
 
     # Check for TTY (interactive mode)
     # If GITHUB_ACTIONS is set, disable TTY to avoid 'the input device is not a TTY' errors
@@ -149,10 +160,10 @@ check_docker() {
     # Podman specific fix
     if [[ "${DOCKER_CMD[*]}" == *"podman"* ]]; then
         # Fix permission mapping for podman
-        DOCKER_CMD_OPTS+=(--security-opt label=disable)
+        DOCKER_RUN_OPTS+=(--security-opt label=disable)
         # If not root, keep id
         if [[ "${DOCKER_CMD[*]}" != *"sudo"* ]]; then
-             DOCKER_CMD_OPTS+=(--userns=keep-id)
+             DOCKER_RUN_OPTS+=(--userns=keep-id)
         fi
     fi
 }
@@ -337,6 +348,10 @@ case "$1" in
         snapshot
         exit 0
         ;;
+    "clean"|"reset"|"bash"|"debug")
+        # Lightweight commands: only need docker, skip update checks
+        check_os && check_docker && check_hooks || exit 1
+        ;;
     "sync"|*)
         check_environment || exit 1
         if [ "$1" == "sync" ]; then
@@ -379,17 +394,40 @@ chown_if_need() {
     fi
 }
 
-ensure_docker_start_cmd() {
+# Prepare execution command
+prepare_docker_start_cmd() {
     if [ -n "$SIMULATION_MODE" ]; then
         START_IMAGE=()
         info "Simulation Mode: Docker bypassed."
-    else
-        START_IMAGE=("${DOCKER_CMD[@]}" run "${DOCKER_CMD_OPTS[@]}" -v "$(realpath "$SCRIPT_DIR"):/home/student/xv6" -w /home/student/xv6 -u "$(id -u):$(id -g)" --rm "$IMAGE_NAME")
+        return 0
     fi
-}
+    if [ -n "$GITHUB_ACTIONS" ]; then
+        START_IMAGE=()
+        info "GitHub Action: Docker bypassed."
+        return 0
+    fi
 
-# Prepare execution command
-ensure_docker_start_cmd
+    case "$1" in
+        "run")
+            START_IMAGE=("${DOCKER_CMD[@]}" run "${DOCKER_CMD_OPTS[@]}" "${DOCKER_RUN_OPTS[@]}" -v "$(realpath "$SCRIPT_DIR"):/home/student/xv6" -w /home/student/xv6 -u "$(id -u):$(id -g)" --rm "$IMAGE_NAME")
+            ;;
+        "start")
+            local state
+            state=$("${DOCKER_CMD[@]}" container inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null) || state="missing"
+            if [ "$state" = "true" ]; then
+                : # already running
+            elif [ "$state" = "false" ]; then
+                "${DOCKER_CMD[@]}" start "$CONTAINER_NAME" > /dev/null 2>&1
+            else
+                "${DOCKER_CMD[@]}" run -d "${DOCKER_CMD_OPTS[@]}" "${DOCKER_RUN_OPTS[@]}" -v "$(realpath "$SCRIPT_DIR"):/home/student/xv6" -w /home/student/xv6 -u "$(id -u):$(id -g)" --name "$CONTAINER_NAME" "$IMAGE_NAME" sleep infinity > /dev/null 2>&1
+            fi
+            START_IMAGE=("${DOCKER_CMD[@]}" exec "${DOCKER_CMD_OPTS[@]}" "$CONTAINER_NAME")
+            ;;
+        "rm")
+            START_IMAGE=("${DOCKER_CMD[@]}" rm -f "$CONTAINER_NAME")
+            ;;
+    esac
+}
 
 # ------------------------------------------------------------------------------
 # 4. Grading & Sanitization Logic
@@ -449,23 +487,45 @@ case "$1" in
         ;;
     "qemu")
         info "Starting QEMU in $IMAGE_NAME..."
+        prepare_docker_start_cmd run
         "${START_IMAGE[@]}" make qemu
         chown_if_need "."
         ;;
     "test"|"grade")
         check_ta_commit
         info "Running tests for $ASSIGNMENT..."
+        prepare_docker_start_cmd run
         # Pass arguments to run.py
         shift
         "${START_IMAGE[@]}" python3 grade/run.py "$@"
         chown_if_need "."
         ;;
-
     "clean")
         info "Cleaning build artifacts..."
+        prepare_docker_start_cmd run
         "${START_IMAGE[@]}" make clean
         chown_if_need "."
         ;;
+
+    "bash")
+        info "Starting BASH in $IMAGE_NAME..."
+        prepare_docker_start_cmd start
+        shift
+        "${START_IMAGE[@]}" bash "$@"
+        chown_if_need "."
+        ;;
+    "debug")
+        info "Starting QEMU-GDB in $IMAGE_NAME..."
+        prepare_docker_start_cmd start
+        "${START_IMAGE[@]}" bash -c "tmux new-session -d 'make qemu-gdb' \\; split-window -h 'gdb-multiarch -q' \\; attach"
+        chown_if_need "."
+        ;;
+    "reset")
+        info "Resetting $IMAGE_NAME..."
+        prepare_docker_start_cmd rm
+        "${START_IMAGE[@]}"
+        ;;
+
     "snapshot")
         # Already handled early
         ;;
@@ -473,7 +533,7 @@ case "$1" in
         # Already handled early
         ;;
     *)
-        echo "Usage: $0 {init|qemu|test|grade|clean|snapshot|sync}"
+        echo "Usage: $0 {init|qemu|test|grade|clean|bash|debug|reset|snapshot|sync}"
         exit 1
         ;;
 esac
