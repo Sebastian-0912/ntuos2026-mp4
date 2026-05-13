@@ -333,6 +333,7 @@ sys_open(void)
       end_op();
       return -1;
     }
+    // TODO: symlinkfile
   }
 
   if(ip->type == T_DEVICE && (ip->major < 0 || ip->major >= NDEV)){
@@ -409,10 +410,11 @@ sys_mknod(void)
 uint64
 sys_chdir(void)
 {
+  // TODO: symlinkdir
   char path[MAXPATH];
   struct inode *ip;
   struct proc *p = myproc();
-  
+
   begin_op();
   if(argstr(0, path, MAXPATH) < 0 || (ip = namei(path)) == 0){
     end_op();
@@ -501,5 +503,13 @@ sys_pipe(void)
     fileclose(wf);
     return -1;
   }
+  return 0;
+}
+
+uint64
+sys_symlink(void)
+{
+  // TODO: symlinkfile
+  panic("sys_symlink not implemented");
   return 0;
 }

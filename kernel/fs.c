@@ -408,6 +408,7 @@ bmap(struct inode *ip, uint bn)
   uint addr, *a;
   struct buf *bp;
 
+  // TODO: bigfile
   if(bn < NDIRECT){
     if((addr = ip->addrs[bn]) == 0){
       addr = balloc(ip->dev);
@@ -452,6 +453,7 @@ itrunc(struct inode *ip)
   struct buf *bp;
   uint *a;
 
+  // TODO: bigfile
   for(i = 0; i < NDIRECT; i++){
     if(ip->addrs[i]){
       bfree(ip->dev, ip->addrs[i]);
@@ -698,6 +700,7 @@ namex(char *path, int nameiparent, char *name)
     }
     iunlockput(ip);
     ip = next;
+    // TODO: symlinkdir
   }
   if(nameiparent){
     iput(ip);
