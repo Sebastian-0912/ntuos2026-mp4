@@ -1,0 +1,127 @@
+{
+  "$schema": "http://ntu-os.org/schemas/v1/report",
+  "meta": {
+    "generated_at": "2026-05-13T12:23:38.717651+00:00",
+    "grader_image": "ntuos/mpx",
+    "assignment": "mp4"
+  },
+  "target_commit": {
+    "sha": "unknown",
+    "author": "unknown",
+    "timestamp": "",
+    "is_late": false
+  },
+  "student_info": {
+    "student_id": "R14946009",
+    "name": "R14946009",
+    "github_username": "R14946009",
+    "is_valid": true
+  },
+  "grading": {
+    "deadline": "2026-06-30T23:59:59+08:00",
+    "is_late": false,
+    "late_days": 0,
+    "penalty_policy": "20% per day",
+    "penalty_ratio": 0.0,
+    "identity_failed": false,
+    "is_private": true
+  },
+  "scores": {
+    "raw_total": 64,
+    "max_total": 64,
+    "final_score": 64.0,
+    "details": [
+      {
+        "test_case": "Identity Validation (student.conf)",
+        "status": "PASS",
+        "score": 0,
+        "max_score": 0,
+        "output": "Validated: R14946009 (R14946009)"
+      },
+      {
+        "test_case": "Testing large files (public)",
+        "status": "PASS",
+        "score": 0,
+        "max_score": 0
+      },
+      {
+        "test_case": "  Large files: public testcase 1",
+        "status": "PASS",
+        "score": 6,
+        "max_score": 6
+      },
+      {
+        "test_case": "  Large files: public testcase 2",
+        "status": "PASS",
+        "score": 6,
+        "max_score": 6
+      },
+      {
+        "test_case": "Testing symbolic link cycle detection (public)",
+        "status": "PASS",
+        "score": 0,
+        "max_score": 0
+      },
+      {
+        "test_case": "  Symlink cycle: self-loop",
+        "status": "PASS",
+        "score": 4,
+        "max_score": 4
+      },
+      {
+        "test_case": "  Symlink cycle: 2-cycle",
+        "status": "PASS",
+        "score": 4,
+        "max_score": 4
+      },
+      {
+        "test_case": "  Symlink cycle: 3-cycle",
+        "status": "PASS",
+        "score": 4,
+        "max_score": 4
+      },
+      {
+        "test_case": "  Symlink cycle: depth limit",
+        "status": "PASS",
+        "score": 4,
+        "max_score": 4
+      },
+      {
+        "test_case": "Testing symbolic links to directories (public)",
+        "status": "PASS",
+        "score": 0,
+        "max_score": 0
+      },
+      {
+        "test_case": "  Symbolic links to directories: public testcase 1",
+        "status": "PASS",
+        "score": 9,
+        "max_score": 9
+      },
+      {
+        "test_case": "  Symbolic links to directories: public testcase 2",
+        "status": "PASS",
+        "score": 9,
+        "max_score": 9
+      },
+      {
+        "test_case": "Testing symbolic links to files (public)",
+        "status": "PASS",
+        "score": 0,
+        "max_score": 0
+      },
+      {
+        "test_case": "  Symbolic links to files: public testcase 1",
+        "status": "PASS",
+        "score": 9,
+        "max_score": 9
+      },
+      {
+        "test_case": "  Symbolic links to files: public testcase 2",
+        "status": "PASS",
+        "score": 9,
+        "max_score": 9
+      }
+    ]
+  }
+}
