@@ -335,14 +335,23 @@ sys_open(void)
     }
 
     if(ip->type == T_SYMLINK && !(omode & O_NOFOLLOW)){
-      int depth = 0;
+      uint visited[100];
+      int n = 0;
       char tgt[MAXPATH];
       while(ip->type == T_SYMLINK){
-        if(++depth > 20){
+        for(int i = 0; i < n; i++){
+          if(visited[i] == ip->inum){
+            iunlockput(ip);
+            end_op();
+            return -1;
+          }
+        }
+        if(n >= 100){
           iunlockput(ip);
           end_op();
           return -1;
         }
+        visited[n++] = ip->inum;
         memset(tgt, 0, sizeof(tgt));
         if(readi(ip, 0, (uint64)tgt, 0, MAXPATH) <= 0){
           iunlockput(ip);
@@ -450,14 +459,23 @@ sys_chdir(void)
   ilock(ip);
 
   {
-    int depth = 0;
+    uint visited[100];
+    int n = 0;
     char tgt[MAXPATH];
     while(ip->type == T_SYMLINK){
-      if(++depth > 20){
+      for(int i = 0; i < n; i++){
+        if(visited[i] == ip->inum){
+          iunlockput(ip);
+          end_op();
+          return -1;
+        }
+      }
+      if(n >= 100){
         iunlockput(ip);
         end_op();
         return -1;
       }
+      visited[n++] = ip->inum;
       memset(tgt, 0, sizeof(tgt));
       if(readi(ip, 0, (uint64)tgt, 0, MAXPATH) <= 0){
         iunlockput(ip);

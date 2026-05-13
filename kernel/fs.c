@@ -761,14 +761,22 @@ namex(char *path, int nameiparent, char *name)
     ip = next;
 
     if(*path != '\0'){
-      int depth = 0;
+      uint visited[100];
+      int n = 0;
       char tgt[MAXPATH];
       ilock(ip);
       while(ip->type == T_SYMLINK){
-        if(++depth > 20){
+        for(int i = 0; i < n; i++){
+          if(visited[i] == ip->inum){
+            iunlockput(ip);
+            return 0;
+          }
+        }
+        if(n >= 100){
           iunlockput(ip);
           return 0;
         }
+        visited[n++] = ip->inum;
         memset(tgt, 0, sizeof(tgt));
         if(readi(ip, 0, (uint64)tgt, 0, MAXPATH) <= 0){
           iunlockput(ip);
