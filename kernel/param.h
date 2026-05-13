@@ -9,7 +9,7 @@
 #define MAXOPBLOCKS  10  // max # of blocks any FS op writes
 #define LOGBLOCKS    (MAXOPBLOCKS*3)  // max data blocks in on-disk log
 #define NBUF         (MAXOPBLOCKS*3)  // size of disk block cache
-// TODO: bigfile. You need 200000 FSSIZE to finish Large Files.
+// largefile: file system needs 200000 blocks to fit 6666-block test
 #define FSSIZE       200000  // size of file system in blocks
 #define MAXPATH      128   // maximum file path name
 #define USERSTACK    1     // user stack pages
