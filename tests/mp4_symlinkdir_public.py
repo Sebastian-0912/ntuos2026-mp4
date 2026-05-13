@@ -1,6 +1,6 @@
 from gradelib import *
 
-r = Runner(save("out/mp4_symlinkdir_public.out"))
+r = Runner(save("mp4_symlinkdir_public.out"))
 
 @test(0, "Testing symbolic links to directories (public)")
 def test_symlinkdir():

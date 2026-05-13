@@ -31,25 +31,13 @@ main(int argc, char *argv[])
 static void
 cleanup(void)
 {
-  char path[32];
-  for(int i = 0; i < 30; i++){
-    path[0] = 0;
-    strcpy(path, "/cyc/");
-    char numbuf[8];
-    int n = i, k = 0;
-    if(n == 0){ numbuf[k++] = '0'; }
-    else { char tmp[8]; int t = 0; while(n){ tmp[t++] = '0' + n%10; n /= 10; } while(t--) numbuf[k++] = tmp[t]; }
-    numbuf[k] = 0;
-    strcpy(path + 5, numbuf);
+  char path[16];
+  for(char c = 'a'; c <= 'z'; c++){
+    path[0] = '/'; path[1] = 'c'; path[2] = 'y'; path[3] = 'c'; path[4] = '/';
+    path[5] = c;   path[6] = 0;
     unlink(path);
   }
-  unlink("/cyc/a");
-  unlink("/cyc/b");
-  unlink("/cyc/c");
   unlink("/cyc");
-  unlink("/cdir/A");
-  unlink("/cdir/B");
-  unlink("/cdir");
 }
 
 // self-loop: /cyc/a -> /cyc/a
@@ -97,25 +85,21 @@ done:
   return;
 }
 
-// long chain that exceeds depth threshold (no cycle, but >= 25 hops)
+// 25-hop chain a -> b -> c -> ... -> y -> z (z never created)
+// must fail by depth limit, not by cycle
 static void
 public4(void)
 {
   int fd;
-  char from[16], to[16];
+  char from[8] = "/cyc/?";
+  char to[8]   = "/cyc/?";
   mkdir("/cyc");
-  for(int i = 0; i < 25; i++){
-    from[0] = '/'; from[1] = 'c'; from[2] = 'y'; from[3] = 'c'; from[4] = '/';
-    to[0]   = '/'; to[1]   = 'c'; to[2]   = 'y'; to[3]   = 'c'; to[4]   = '/';
-    int n = i;     int k = 5; char tmp[4]; int t = 0;
-    if(n == 0){ tmp[t++] = '0'; } else { while(n){ tmp[t++] = '0' + n%10; n /= 10; } }
-    while(t--) from[k++] = tmp[t]; from[k] = 0;
-    n = i + 1;  k = 5; t = 0;
-    if(n == 0){ tmp[t++] = '0'; } else { while(n){ tmp[t++] = '0' + n%10; n /= 10; } }
-    while(t--) to[k++] = tmp[t]; to[k] = 0;
+  for(char c = 'a'; c <= 'y'; c++){
+    from[5] = c;
+    to[5]   = c + 1;
     if(symlink(to, from) < 0) fail("symlink chain failed");
   }
-  fd = open("/cyc/0", O_RDWR);
+  fd = open("/cyc/a", O_RDWR);
   if(fd >= 0){ close(fd); fail("open long chain should fail by depth limit"); }
   printf("public testcase 4: ok\n");
 done:
