@@ -408,7 +408,6 @@ bmap(struct inode *ip, uint bn)
   uint addr, *a;
   struct buf *bp;
 
-  // TODO: bigfile
   if(bn < NDIRECT){
     if((addr = ip->addrs[bn]) == 0){
       addr = balloc(ip->dev);
@@ -421,7 +420,6 @@ bmap(struct inode *ip, uint bn)
   bn -= NDIRECT;
 
   if(bn < NINDIRECT){
-    // Load indirect block, allocating if necessary.
     if((addr = ip->addrs[NDIRECT]) == 0){
       addr = balloc(ip->dev);
       if(addr == 0)
@@ -440,6 +438,45 @@ bmap(struct inode *ip, uint bn)
     brelse(bp);
     return addr;
   }
+  bn -= NINDIRECT;
+
+  if(bn < 2 * NDINDIRECT){
+    int slot = NDIRECT + 1 + bn / NDINDIRECT;
+    uint sub = bn % NDINDIRECT;
+    uint i1 = sub / NINDIRECT;
+    uint i2 = sub % NINDIRECT;
+
+    if((addr = ip->addrs[slot]) == 0){
+      addr = balloc(ip->dev);
+      if(addr == 0)
+        return 0;
+      ip->addrs[slot] = addr;
+    }
+    bp = bread(ip->dev, addr);
+    a = (uint*)bp->data;
+    if((addr = a[i1]) == 0){
+      addr = balloc(ip->dev);
+      if(addr == 0){
+        brelse(bp);
+        return 0;
+      }
+      a[i1] = addr;
+      log_write(bp);
+    }
+    brelse(bp);
+
+    bp = bread(ip->dev, addr);
+    a = (uint*)bp->data;
+    if((addr = a[i2]) == 0){
+      addr = balloc(ip->dev);
+      if(addr){
+        a[i2] = addr;
+        log_write(bp);
+      }
+    }
+    brelse(bp);
+    return addr;
+  }
 
   panic("bmap: out of range");
 }
@@ -449,11 +486,10 @@ bmap(struct inode *ip, uint bn)
 void
 itrunc(struct inode *ip)
 {
-  int i, j;
-  struct buf *bp;
-  uint *a;
+  int i, j, k, m;
+  struct buf *bp, *bp2;
+  uint *a, *b;
 
-  // TODO: bigfile
   for(i = 0; i < NDIRECT; i++){
     if(ip->addrs[i]){
       bfree(ip->dev, ip->addrs[i]);
@@ -471,6 +507,29 @@ itrunc(struct inode *ip)
     brelse(bp);
     bfree(ip->dev, ip->addrs[NDIRECT]);
     ip->addrs[NDIRECT] = 0;
+  }
+
+  for(k = 0; k < 2; k++){
+    int slot = NDIRECT + 1 + k;
+    if(ip->addrs[slot] == 0)
+      continue;
+    bp = bread(ip->dev, ip->addrs[slot]);
+    a = (uint*)bp->data;
+    for(j = 0; j < NINDIRECT; j++){
+      if(a[j] == 0)
+        continue;
+      bp2 = bread(ip->dev, a[j]);
+      b = (uint*)bp2->data;
+      for(m = 0; m < NINDIRECT; m++){
+        if(b[m])
+          bfree(ip->dev, b[m]);
+      }
+      brelse(bp2);
+      bfree(ip->dev, a[j]);
+    }
+    brelse(bp);
+    bfree(ip->dev, ip->addrs[slot]);
+    ip->addrs[slot] = 0;
   }
 
   ip->size = 0;
@@ -700,7 +759,28 @@ namex(char *path, int nameiparent, char *name)
     }
     iunlockput(ip);
     ip = next;
-    // TODO: symlinkdir
+
+    if(*path != '\0'){
+      int depth = 0;
+      char tgt[MAXPATH];
+      ilock(ip);
+      while(ip->type == T_SYMLINK){
+        if(++depth > 20){
+          iunlockput(ip);
+          return 0;
+        }
+        memset(tgt, 0, sizeof(tgt));
+        if(readi(ip, 0, (uint64)tgt, 0, MAXPATH) <= 0){
+          iunlockput(ip);
+          return 0;
+        }
+        iunlockput(ip);
+        if((ip = namei(tgt)) == 0)
+          return 0;
+        ilock(ip);
+      }
+      iunlock(ip);
+    }
   }
   if(nameiparent){
     iput(ip);
