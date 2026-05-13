@@ -1,6 +1,6 @@
 from gradelib import *
 
-r = Runner(save("out/mp4_symlinkcycle_public.out"))
+r = Runner(save("mp4_symlinkcycle_public.out"))
 
 @test(0, "Testing symbolic link cycle detection (public)")
 def test_symlinkcycle():

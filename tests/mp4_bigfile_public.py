@@ -1,6 +1,6 @@
 from gradelib import *
 
-r = Runner(save("out/mp4_bigfile_public.out"))
+r = Runner(save("mp4_bigfile_public.out"))
 
 @test(0, "Testing large files (public)")
 def test_bigfile():
