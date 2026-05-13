@@ -20,6 +20,6 @@ def test_cycle_public2():
 def test_cycle_public3():
     r.match(r'^public testcase 3: ok$')
 
-@test(4, "Symlink cycle: depth limit", parent=test_symlinkcycle)
+@test(4, "Symlink: 25-hop non-cyclic chain", parent=test_symlinkcycle)
 def test_cycle_public4():
     r.match(r'^public testcase 4: ok$')

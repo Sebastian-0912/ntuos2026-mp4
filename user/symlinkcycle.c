@@ -85,23 +85,37 @@ done:
   return;
 }
 
-// 25-hop chain a -> b -> c -> ... -> y -> z (z never created)
-// must fail by depth limit, not by cycle
+// 25-hop non-cyclic chain a -> b -> ... -> y -> z (z is a real file)
+// MUST succeed: not a cycle, follow chain to z, read should return z's content
 static void
 public4(void)
 {
-  int fd;
+  int fd = -1, fd2 = -1;
+  char want = '$', got = 0;
   char from[8] = "/cyc/?";
   char to[8]   = "/cyc/?";
+
   mkdir("/cyc");
+
+  fd2 = open("/cyc/z", O_CREATE | O_RDWR);
+  if(fd2 < 0) fail("failed to create /cyc/z");
+  if(write(fd2, &want, 1) != 1) fail("failed to write to /cyc/z");
+  close(fd2);
+  fd2 = -1;
+
   for(char c = 'a'; c <= 'y'; c++){
     from[5] = c;
     to[5]   = c + 1;
     if(symlink(to, from) < 0) fail("symlink chain failed");
   }
-  fd = open("/cyc/a", O_RDWR);
-  if(fd >= 0){ close(fd); fail("open long chain should fail by depth limit"); }
+
+  fd = open("/cyc/a", O_RDONLY);
+  if(fd < 0) fail("open 25-hop non-cyclic chain should succeed (not a cycle)");
+  if(read(fd, &got, 1) != 1) fail("read through chain failed");
+  if(got != want) fail("content mismatch: chain did not reach /cyc/z");
+
   printf("public testcase 4: ok\n");
 done:
-  return;
+  if(fd >= 0) close(fd);
+  if(fd2 >= 0) close(fd2);
 }
