@@ -333,7 +333,11 @@ sys_open(void)
       end_op();
       return -1;
     }
-    // TODO: symlinkfile
+
+    /* To do: symlinkfile
+
+
+    */
   }
 
   if(ip->type == T_DEVICE && (ip->major < 0 || ip->major >= NDEV)){
@@ -410,7 +414,6 @@ sys_mknod(void)
 uint64
 sys_chdir(void)
 {
-  // TODO: symlinkdir
   char path[MAXPATH];
   struct inode *ip;
   struct proc *p = myproc();
@@ -421,6 +424,12 @@ sys_chdir(void)
     return -1;
   }
   ilock(ip);
+
+  /* To do: symlinkdir
+
+
+  */
+
   if(ip->type != T_DIR){
     iunlockput(ip);
     end_op();
@@ -509,7 +518,10 @@ sys_pipe(void)
 uint64
 sys_symlink(void)
 {
-  // TODO: symlinkfile
+  /* To do: symlinkfile
+
+
+  */
   panic("sys_symlink not implemented");
   return 0;
 }
