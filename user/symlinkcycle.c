@@ -124,8 +124,6 @@ done:
 }
 
 // Cycle in the center: a -> b -> c -> d -> e -> c
-// (a, b are a non-cyclic prefix; c -> d -> e -> c forms a 3-cycle)
-// open(a) must fail: follow visits a, b, c, d, e, then hits c again => cycle.
 static void
 public5(void)
 {

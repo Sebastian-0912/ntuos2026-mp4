@@ -8,10 +8,10 @@ def test_symlinkdir():
         'symlinkdir'
     ]), timeout=30)
 
-@test(9, "Symbolic links to directories: public testcase 1", parent=test_symlinkdir)
+@test(10, "Symbolic links to directories: public testcase 1", parent=test_symlinkdir)
 def test_symlinkdir_public1():
     r.match(r'^public testcase 1: ok$')
 
-@test(9, "Symbolic links to directories: public testcase 2", parent=test_symlinkdir)
+@test(10, "Symbolic links to directories: public testcase 2", parent=test_symlinkdir)
 def test_symlinkdir_public2():
     r.match(r'^public testcase 2: ok$')

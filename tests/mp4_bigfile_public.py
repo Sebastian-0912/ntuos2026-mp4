@@ -8,10 +8,10 @@ def test_bigfile():
         'bigfile'
     ]), timeout=1800)
 
-@test(6, "Large files: public testcase 1", parent=test_bigfile)
+@test(15, "Large files: public testcase 1", parent=test_bigfile)
 def test_bigfile_public1():
     r.match(r'^public testcase 1: ok$')
 
-@test(6, "Large files: public testcase 2", parent=test_bigfile)
+@test(15, "Large files: public testcase 2", parent=test_bigfile)
 def test_bigfile_public2():
     r.match(r'^public testcase 2: ok$')
