@@ -11,6 +11,7 @@ static void public1(void);
 static void public2(void);
 static void public3(void);
 static void public4(void);
+static void public5(void);
 static void cleanup(void);
 
 int
@@ -24,6 +25,8 @@ main(int argc, char *argv[])
   public3();
   cleanup();
   public4();
+  cleanup();
+  public5();
   cleanup();
   exit(failed);
 }
@@ -118,4 +121,24 @@ public4(void)
 done:
   if(fd >= 0) close(fd);
   if(fd2 >= 0) close(fd2);
+}
+
+// Cycle in the center: a -> b -> c -> d -> e -> c
+// (a, b are non-cyclic prefix; c -> d -> e -> c forms a 3-cycle in the middle)
+// open(a) must fail: follow visits a, b, c, d, e, then hits c again => cycle
+static void
+public5(void)
+{
+  int fd;
+  mkdir("/cyc");
+  if(symlink("/cyc/b", "/cyc/a") < 0) fail("symlink a->b failed");
+  if(symlink("/cyc/c", "/cyc/b") < 0) fail("symlink b->c failed");
+  if(symlink("/cyc/d", "/cyc/c") < 0) fail("symlink c->d failed");
+  if(symlink("/cyc/e", "/cyc/d") < 0) fail("symlink d->e failed");
+  if(symlink("/cyc/c", "/cyc/e") < 0) fail("symlink e->c failed");
+  fd = open("/cyc/a", O_RDWR);
+  if(fd >= 0){ close(fd); fail("open center-cycle should fail"); }
+  printf("public testcase 5: ok\n");
+done:
+  return;
 }

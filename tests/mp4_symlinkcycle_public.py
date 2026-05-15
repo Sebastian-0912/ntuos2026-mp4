@@ -23,3 +23,7 @@ def test_cycle_public3():
 @test(4, "Symlink: 25-hop non-cyclic chain", parent=test_symlinkcycle)
 def test_cycle_public4():
     r.match(r'^public testcase 4: ok$')
+
+@test(4, "Symlink cycle: cycle in the center (a->b->c->d->e->c)", parent=test_symlinkcycle)
+def test_cycle_public5():
+    r.match(r'^public testcase 5: ok$')
