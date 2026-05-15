@@ -231,7 +231,7 @@ while (ip->type == T_SYMLINK) {
 
 ---
 
-## 5. TL;DR
+## 5.
 
 整份 mp4 一共 **6 個 `/* To do */` 空格**：
 
