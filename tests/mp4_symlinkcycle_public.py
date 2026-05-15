@@ -8,18 +8,22 @@ def test_symlinkcycle():
         'symlinkcycle'
     ]), timeout=30)
 
-@test(4, "Symlink cycle: self-loop", parent=test_symlinkcycle)
+@test(2, "Symlink cycle: self-loop", parent=test_symlinkcycle)
 def test_cycle_public1():
     r.match(r'^public testcase 1: ok$')
 
-@test(4, "Symlink cycle: 2-cycle", parent=test_symlinkcycle)
+@test(2, "Symlink cycle: 2-cycle", parent=test_symlinkcycle)
 def test_cycle_public2():
     r.match(r'^public testcase 2: ok$')
 
-@test(4, "Symlink cycle: 3-cycle", parent=test_symlinkcycle)
+@test(2, "Symlink cycle: 3-cycle", parent=test_symlinkcycle)
 def test_cycle_public3():
     r.match(r'^public testcase 3: ok$')
 
-@test(4, "Symlink: 25-hop non-cyclic chain", parent=test_symlinkcycle)
+@test(3, "Symlink: 25-hop non-cyclic chain", parent=test_symlinkcycle)
 def test_cycle_public4():
     r.match(r'^public testcase 4: ok$')
+
+@test(3, "Symlink cycle: cycle in the center (a->b->c->d->e->c)", parent=test_symlinkcycle)
+def test_cycle_public5():
+    r.match(r'^public testcase 5: ok$')
