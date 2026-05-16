@@ -105,6 +105,15 @@ You need to modify the following functions in `kernel/fs.c`:
    - Implement the logic to free all data blocks and indirect blocks associated with the two doubly-indirect slots.
    - Failure to free all blocks will cause a disk space leak, which may cause subsequent tests to fail.
 
+### Test Specifications
+
+| Test Case | Type | Description | Points |
+| :--- | :--- | :--- | :--- |
+| `public testcase 1` | Public | Small file write/read test (270 blocks). | 15 |
+| `public testcase 2` | Public | Larger file write/read test (6666 blocks). | 15 |
+| `private testcases` | Private | Stress tests to verify doubly-indirect logic and disk consistency. | 10 |
+
+
 ### Guidelines and Hints
 
 - The layout is pre-defined in `kernel/fs.h`: `10 direct + 1 singly + 2 doubly`.
@@ -141,6 +150,23 @@ You need to modify the following locations:
 
 4. **`sys_chdir()`** in `kernel/sysfile.c`:
    - Add logic to follow the symbolic link if the target of `chdir` is a link pointing to a directory.
+
+### Test Specifications
+
+#### Symbolic Links to Files & Directories
+| Test Case | Type | Description | Points |
+| :--- | :--- | :--- | :--- |
+| `symlinkfile: public 1-2`| Public | Basic resolution and chained file symlinks. | 10 |
+| `symlinkdir: public 1-2` | Public | Resolution via intermediate directory symlinks. | 10 |
+| `private testcases` | Private | Advanced resolution scenarios . | 20 |
+
+#### Cycle Detection
+| Test Case | Type | Description | Points |
+| :--- | :--- | :--- | :--- |
+| `symlinkcycle: public 1-2`| Public | Detection of self-loops and 2-cycles. | 8 |
+| `symlinkcycle: public 5` | Public | Detection of cycles in the middle of a chain. | 4 |
+| `private testcases` | Private | Complex cycle detection and `O_NOFOLLOW` verification. | 8 |
+
 
 ### Guidelines and Hints
 
@@ -179,6 +205,8 @@ The automated grader will run the following scripts:
 ## 📊 Grading Policy
 
 - **Part 1: Large Files (40%)**
+  - `bigfile: public testcases` — 30%
+  - `bigfile: private testcases` — 10%
 
 | Sub-task | Points |
 | :--- | ---: |
@@ -187,6 +215,10 @@ The automated grader will run the following scripts:
 | private 1| 10 |
 
 - **Part 2: Symbolic Link & Cycle Prevention (60%)**
+  - `symlinkfile & symlinkdir: public testcases` — 20%
+  - `symlinkfile & symlinkdir: private testcases` — 20%
+  - `symlinkcycle: public testcases` — 12%
+  - `symlinkcycle: private testcases` — 8%
 
 | Sub-task | Points |
 | :--- | ---: |
