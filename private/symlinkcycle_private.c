@@ -12,6 +12,8 @@ static int failed = 0;
 
 static void private1(void);
 static void private2(void);
+static void private3(void);
+static void private4(void);
 static void cleanup(void);
 
 int
@@ -21,6 +23,10 @@ main(int argc, char *argv[])
   private1();
   cleanup();
   private2();
+  cleanup();
+  private3();
+  cleanup();
+  private4();
   cleanup();
   exit(failed);
 }
@@ -85,5 +91,55 @@ private2(void)
   printf("private testcase 2: ok\n");
 done:
   if(fd1 >= 0) close(fd1);
+  if(fd2 >= 0) close(fd2);
+}
+
+// 3-cycle: a -> b -> c -> a
+static void
+private3(void)
+{
+  int fd;
+  mkdir("/cyc");
+  if(symlink("/cyc/b", "/cyc/a") < 0) fail("symlink a->b failed");
+  if(symlink("/cyc/c", "/cyc/b") < 0) fail("symlink b->c failed");
+  if(symlink("/cyc/a", "/cyc/c") < 0) fail("symlink c->a failed");
+  fd = open("/cyc/a", O_RDWR);
+  if(fd >= 0){ close(fd); fail("open 3-cycle should fail"); }
+  printf("private testcase 3: ok\n");
+done:
+  return;
+}
+
+// 25-hop non-cyclic chain a -> b -> ... -> y -> z (z is a real file)
+static void
+private4(void)
+{
+  int fd = -1, fd2 = -1;
+  char want = '$', got = 0;
+  char from[8] = "/cyc/?";
+  char to[8]   = "/cyc/?";
+
+  mkdir("/cyc");
+
+  fd2 = open("/cyc/z", O_CREATE | O_RDWR);
+  if(fd2 < 0) fail("failed to create /cyc/z");
+  if(write(fd2, &want, 1) != 1) fail("failed to write to /cyc/z");
+  close(fd2);
+  fd2 = -1;
+
+  for(char c = 'a'; c <= 'y'; c++){
+    from[5] = c;
+    to[5]   = c + 1;
+    if(symlink(to, from) < 0) fail("symlink chain failed");
+  }
+
+  fd = open("/cyc/a", O_RDONLY);
+  if(fd < 0) fail("open 25-hop non-cyclic chain should succeed (not a cycle)");
+  if(read(fd, &got, 1) != 1) fail("read through chain failed");
+  if(got != want) fail("content mismatch: chain did not reach /cyc/z");
+
+  printf("private testcase 4: ok\n");
+done:
+  if(fd >= 0) close(fd);
   if(fd2 >= 0) close(fd2);
 }
