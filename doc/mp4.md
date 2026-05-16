@@ -134,7 +134,7 @@ You need to modify the following locations:
 2. **`sys_open()`** in `kernel/sysfile.c`:
    - Add logic to follow symbolic links when a file is opened.
    - If `O_NOFOLLOW` is specified in the flags, the symbolic link itself should be opened instead of following it.
-   - Implement cycle detection: keep track of visited inodes and fail if a cycle is detected or if the number of hops exceeds 100.
+   - Cycle detection: maintain a per-call set of inode numbers visited during this follow chain. Before following another symlink, check whether its inode is already in the set — if so, return -1. After following, add the inode to the set. A pure depth limit is not sufficient: it cannot distinguish a 25-hop non-cyclic chain (which must succeed) from a short cycle. The 100-hop cap is a safety net for pathological long chains, not a substitute for the visited-set check.
 
 3. **`namex()`** in `kernel/fs.c`:
    - Add logic to follow directory symbolic links when they appear as intermediate components of a path (e.g., in `/a/link_to_dir/b`, `link_to_dir` must be followed).
@@ -179,7 +179,28 @@ The automated grader will run the following scripts:
 ## 📊 Grading Policy
 
 - **Part 1: Large Files (40%)**
+
+| Sub-task | Points |
+| :--- | ---: |
+| public 1: Large files 270 blocks | 15 |
+| public 2: Large files 6666 blocks | 15 |
+| private 1| 10 |
+
 - **Part 2: Symbolic Link & Cycle Prevention (60%)**
+
+| Sub-task | Points |
+| :--- | ---: |
+| public 1: Symlink for file testcase 1 | 10 |
+| public 2: Symlink for file testcase 2 | 10 |
+| public 3: Symlink for directory testcase 1 | 10 |
+| public 4: Symlink for directory testcase 2 | 10 |
+| public 5: cycle prevent 1 | 2 |
+| public 6: cycle prevent 2 | 2 |
+| public 7: cycle prevent 3 | 2 |
+| public 8: cycle prevent 4 | 3 |
+| public 9: cycle prevent 5 | 3 |
+| private 1 : cycle prevent 6 | 4 |
+| private 2 : cycle prevent 7 | 4 |
 
 **Penalties:**
 - **Compilation Error**: 0 points.
